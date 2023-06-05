@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="ad.ico">
+    <link rel="stylesheet" type="text/css" href="./static/css/normalize.css">
+    <link rel="stylesheet" type="text/css" href="static/css/base.css">
+    <link rel="stylesheet" type="text/css" href="static/css/ad-style.css">
+
+    <!--suppress JSUnresolvedLibraryURL -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+    <!--    <script type="text/javascript" src="ad/functions/functions.js"></script>-->
+    <script type="module" src="ad/algo.js"></script>
+    <script type="module" src="ad/function-tree.js"></script>
+
+    <script src="//d3js.org/d3.v5.min.js"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
+
+    <title>AD Visualization</title>
+</head>
+<body>
+<header>
+    <img src="ad.ico" alt="ad.ico">
+    <h1>Automatic differentiation visualization</h1>
+    <nav>
+        <ul>
+            <li class="algo-manager" id="step-button">Step<i class="bi bi-file-play"></i></li>
+            <li class="algo-manager" id="resume-button">Resume<i class="bi bi-play-fill"></i></li>
+            <li class="algo-manager" id="pause-button">Pause<i class="bi bi-pause"></i></li>
+            <li class="algo-manager" id="restart-button">Restart<i class="bi bi-stop-fill"></i></li>
+        </ul>
+    </nav>
+</header>
+<main>
+    <script type="module">
+        import { FunctionTree } from "./ad/function-tree.js";
+        import { BrowserManager } from "./ad/browser-manager.js";
+
+        const expr = new FunctionTree.Add(new FunctionTree.Add(new FunctionTree.Add(new FunctionTree.Add(new FunctionTree.Add(new FunctionTree.Variable("y"), new FunctionTree.Variable("y")), new FunctionTree.Variable("y")), new FunctionTree.Add(new FunctionTree.Variable("x"), new FunctionTree.Add(new FunctionTree.Const(83), new FunctionTree.Add(new FunctionTree.Const(76), new FunctionTree.Variable("z"))))), new FunctionTree.Add(new FunctionTree.Const(56), new FunctionTree.Add(new FunctionTree.Const(60), new FunctionTree.Const(67)))), new FunctionTree.Const(65));//new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
+
+        document.getElementById("hello").innerHTML = expr.toString();
+
+        new BrowserManager.ExpressionManager(
+            "step-button",
+            "resume-button",
+            "pause-button",
+            "restart-button",
+            3,
+            expr,
+            new BrowserManager.GraphManager("graph")
+        );
+    </script>
+    <div id="hello">asd</div>
+
+    <div id="graph" style="text-align: center;"></div>
+</main>
+<footer>
+    &copy; AlexSin 2023
+</footer>
+</body>
+</html>
