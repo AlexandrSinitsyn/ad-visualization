@@ -8,20 +8,22 @@ export namespace BrowserManager {
         private time: number;
         private frameTime: number;
         // noinspection JSMismatchedCollectionQueryUpdate
-        private algo: Generator<AlgoUpdate>;
+        private algo: Generator<AlgoUpdate> | undefined;
         public finished: boolean;
         private graphManager: GraphManager;
 
-        constructor(fun: FunctionTree.Node, graphManager: GraphManager, frameTime: number) {
+        constructor(graphManager: GraphManager, frameTime: number) {
             this.graphManager = graphManager;
             this.frameTime = frameTime;
             this.time = frameTime;
             this.finished = false;
-
-            this.algo = new Algo(fun).step();
         }
 
         public frame(dt: number) {
+            if (!this.algo) {
+                return;
+            }
+
             this.time -= dt;
 
             if (this.time <= 0) {
@@ -54,34 +56,13 @@ export namespace BrowserManager {
     export class ExpressionManager {
         private player: Player;
         private isOn: boolean;
-        private expr: FunctionTree.Node;
+        private expr: FunctionTree.Node | undefined;
         private readonly graphManager: GraphManager;
 
-        public constructor(
-            onStepId: string,
-            onResumeId: string,
-            onPauseId: string,
-            onRestartId: string,
-            frame: Seconds,
-            expr: FunctionTree.Node,
-            graphManager: GraphManager,
-        ) {
-            this.expr = expr;
+        public constructor(graphManager: GraphManager, frame: Seconds) {
             this.graphManager = graphManager;
-            this.player = new Player(expr, graphManager, frame * 1000);
+            this.player = new Player(graphManager, frame * 1000);
             this.isOn = false;
-
-            try {
-                document.getElementById(onStepId)!.onclick = () => this.step();
-                document.getElementById(onResumeId)!.onclick = () => this.resume();
-                document.getElementById(onPauseId)!.onclick = () => this.pause();
-                document.getElementById(onRestartId)!.onclick = () => this.restart();
-            } catch (e: any) {
-                throw new Error("Can not initialize Browser manager. Your ids are invalid: " +
-                    `"[${onStepId}, ${onResumeId}, ${onPauseId}, ${onRestartId}]", because "${e.toString()}"`);
-            }
-
-            this.startTimer();
         }
 
         private startTimer() {
@@ -95,25 +76,37 @@ export namespace BrowserManager {
             setTimeout(run, 100);
         }
 
-        private step() {
+        public step() {
             this.player.step();
         }
 
         // fixme if is already running and double click "stop - start" this will left two timers (!)
-        private resume() {
+        public resume() {
             if (!this.isOn) {
                 this.isOn = true;
                 this.startTimer();
             }
         }
 
-        private pause() {
+        public pause() {
             this.isOn = false;
         }
 
-        private restart() {
+        public restart() {
+            if (!this.expr) {
+                return;
+            }
+
             this.pause();
+
+            this.graphManager.reset();
+
             this.player.updateFunction(this.expr);
+        }
+
+        public setFunction(fun: FunctionTree.Node) {
+            this.expr = fun;
+            this.player.updateFunction(fun);
         }
     }
 
@@ -130,6 +123,10 @@ export namespace BrowserManager {
 
             previous.value = update.value;
             previous.df = update.df;
+        }
+
+        public reset() {
+            this.nodes.length = 0;
         }
 
         public toString(): string {
@@ -155,7 +152,7 @@ export namespace BrowserManager {
         private static graphviz: any;
         private graph: Graph;
 
-        constructor(elementId: string) {
+        public constructor(elementId: string) {
             try {
                 const _ = document.getElementById(elementId)!
 
@@ -172,10 +169,19 @@ export namespace BrowserManager {
             this.graph = new Graph();
         }
 
-        onUpdate(update: AlgoUpdate) {
-            console.log(update.toString());
+        public onUpdate(update: AlgoUpdate) {
             this.graph.apply(update);
 
+            this.render();
+        }
+
+        public reset() {
+            this.graph.reset();
+
+            this.render();
+        }
+
+        private render() {
             GraphManager.graphviz.renderDot(this.graph.toString());
         }
     }

@@ -1,13 +1,20 @@
 export namespace FunctionTree {
     export interface Node {
         arrangeByDepth(depth: number): [Node, number][];
+        toString(): string;
+        toTex(): string;
     }
 
     abstract class Element implements Node {
-        arrangeByDepth(depth: number): [FunctionTree.Node, number][] {
+        public arrangeByDepth(depth: number): [FunctionTree.Node, number][] {
             return [[this, depth]];
         }
+
+        public toTex(): string {
+            return this.toString();
+        }
     }
+
     export class Const extends Element {
         public readonly value: number;
 
@@ -17,7 +24,7 @@ export namespace FunctionTree {
         }
 
         public toString(): string {
-            return this.value + "";
+            return this.value + '';
         }
     }
     export class Variable extends Element {
@@ -62,15 +69,33 @@ export namespace FunctionTree {
                 }
             }
         }
+
+        public toTex(): string {
+            return this.toTexImpl(...
+                this.operands instanceof Node ?
+                    [(this.operands as Node).toTex()]
+                    : (this.operands as Node[]).map((n) => n.toTex())
+            );
+        }
+
+        protected abstract toTexImpl(...children: string[]): string;
     }
     export class Add extends Operation<[Node, Node]> {
-        constructor(a: Node, b: Node) {
+        public constructor(a: Node, b: Node) {
             super("+", [a, b]);
+        }
+
+        protected toTexImpl(a: string, b: string): string {
+            return a + ' + ' + b;
         }
     }
     export class Tanh extends Operation<Node> {
-        constructor(x: Node) {
+        public constructor(x: Node) {
             super("tanh", x);
+        }
+
+        protected toTexImpl(x: string): string {
+            return `\\tanh{${x}}`
         }
     }
 }
