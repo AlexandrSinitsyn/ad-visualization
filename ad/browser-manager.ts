@@ -112,6 +112,10 @@ export namespace BrowserManager {
         public speedup(v: Seconds) {
             this.player.speedup(v * 1000);
         }
+
+        public switchAnimation(): boolean {
+            return this.graphManager.switchAnimation();
+        }
     }
 
     class Graph {
@@ -155,6 +159,7 @@ export namespace BrowserManager {
     export class GraphManager {
         private static graphviz: any;
         private graph: Graph;
+        private isAnimated: boolean;
 
         public constructor(elementId: string) {
             try {
@@ -171,6 +176,7 @@ export namespace BrowserManager {
                 throw new Error(`Can not initialize GraphManager due to invalid element id "${elementId}"`)
             }
             this.graph = new Graph();
+            this.isAnimated = true;
         }
 
         public onUpdate(update: AlgoUpdate) {
@@ -192,6 +198,11 @@ export namespace BrowserManager {
         public speedup(frametime: number) {
             GraphManager.graphviz.transition()
                 .delay(frametime / 6).duration(frametime / 2).ease(d3.easeLinear);
+        }
+
+        public switchAnimation(): boolean {
+            this.isAnimated = !this.isAnimated;
+            return this.isAnimated;
         }
     }
 }

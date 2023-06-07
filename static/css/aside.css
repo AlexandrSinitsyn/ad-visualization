@@ -1,0 +1,110 @@
+:root {
+    --font-family: Comic Sans MS, Comic Sans, cursive;
+    --font-style: italic;
+    --font-color: var(--secondary);
+    --border-color: var(--primary);
+    --separator-color: var(--secondary);
+}
+
+aside {
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+            "play step"
+            "pause stop"
+            "sep1 sep1"
+            "fps remove-animation"
+            "sep2 sep2"
+            "function function"
+            "variables variables";
+}
+
+aside > * {
+    margin: 0.25rem;
+}
+
+aside > .play {
+    grid-area: play;
+}
+aside > .step {
+    grid-area: step;
+}
+aside > .pause {
+    grid-area: pause;
+}
+aside > .stop {
+    grid-area: stop;
+}
+aside > .sep1 {
+    grid-area: sep1;
+}
+aside > .fps {
+    grid-area: fps;
+}
+aside > .sep2 {
+    grid-area: sep2;
+}
+aside > .remove-animation {
+    grid-area: remove-animation;
+}
+aside > .function {
+    grid-area: function;
+}
+aside > .variables {
+    grid-area: variables;
+}
+
+aside > .sep1,
+aside > .sep2 {
+    margin: 1rem 0;
+    border: 1px solid var(--separator-color);
+}
+
+aside .marker {
+    width: 100%;
+    font-family: var(--font-family);
+    font-style: var(--font-style);
+    color: var(--font-color);
+}
+
+aside > .variables >.content {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
+aside > .variables > .content > .var {
+    display: grid;
+    grid-template-columns: auto [end] 50px;
+    grid-template-rows: auto [end] 50px;
+    grid-template-areas:
+            "variable-name variable-name"
+            "input expand-right"
+            "expand-left unused";
+}
+
+aside > .variables > .content > .var > .variable-name {
+    grid-area: variable-name;
+}
+aside > .variables > .content > .var > .input {
+    grid-area: input;
+}
+aside > .variables > .content > .var > .expand-right {
+    grid-area: expand-right;
+}
+aside > .variables > .content > .var > .expand-down {
+    grid-area: expand-down;
+}
+aside > .variables > .content > .var > .unused {
+    grid-area: unused;
+}
+
+aside > .variables > .content > .var > .input .table-item {
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+}

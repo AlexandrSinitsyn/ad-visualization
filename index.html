@@ -4,19 +4,37 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <link rel="icon" href="ad.ico">
+
     <link rel="stylesheet" type="text/css" href="./static/css/normalize.css">
-    <link rel="stylesheet" type="text/css" href="static/css/base.css">
-    <link rel="stylesheet" type="text/css" href="static/css/ad-style.css">
+
+    <!-- bootstrap -->
 
     <!--suppress JSUnresolvedLibraryURL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+
+
     <!--suppress JSUnresolvedLibraryURL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!--suppress JSUnresolvedLibraryURL -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <!--suppress JSUnresolvedLibraryURL -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+    <!-- local -->
+
+    <link rel="stylesheet" type="text/css" href="static/css/base.css">
+    <link rel="stylesheet" type="text/css" href="static/css/ad-style.css">
+    <link rel="stylesheet" type="text/css" href="static/css/aside.css">
 
     <!--    <script type="text/javascript" src="ad/functions/functions.js"></script>-->
     <script type="module" src="ad/algo.js"></script>
     <script type="module" src="ad/function-tree.js"></script>
+
+    <!-- graphviz -->
 
     <script src="//d3js.org/d3.v5.min.js"></script>
     <!--suppress JSUnresolvedLibraryURL -->
@@ -24,8 +42,7 @@
     <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 
-    <!--suppress JSUnresolvedLibraryURL -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- mathjax -->
 
     <script>
         MathJax = {
@@ -47,6 +64,8 @@
     <!--suppress JSUnresolvedLibraryURL -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 
+    <!-- loader -->
+
     <script type="module">
         import { FunctionTree } from "./ad/function-tree.js";
         import { BrowserManager } from "./ad/browser-manager.js";
@@ -55,51 +74,47 @@
 
         console.log("Browser manager:", browser);
 
-        // control buttons
+        // setup aside
         $(document).ready(function () {
-            const actionButtons = {
+            const elements = {
+                'play': ['play-fill', () => browser.resume()],
                 'step': ['file-play', () => browser.step()],
-                'resume': ['play-fill', () => browser.resume()],
                 'pause': ['pause', () => browser.pause()],
                 'stop': ['stop-fill', () => browser.restart()],
             };
 
-            const $list = $(".actions > ul");
+            const $aside = $('aside');
 
-            for (const [name, [clazz, callback]] of Object.entries(actionButtons)) {
-                const $item = $($list.find("template").prop("content")).clone().find("li");
-                $item.attr("id", `${name}-button`);
-                $item.click(callback);
-                $item.find("span").text(name.charAt(0).toUpperCase() + name.slice(1));
-                $item.find("i").attr("class", `bi bi-${clazz}`);
-                $item.find("i").attr("id", `hello${name}`);
+            for (const [name, [clazz, callback]] of Object.entries(elements)) {
+                $aside.append(
+`<div id="action-${name}" class="${name} btn btn-outline-primary">
+    <span style="margin-right: 0.5rem">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
+    <i class="bi bi-${clazz}"></i>
+</div>`
+                );
 
-                $list.append($item);
+                $aside.find(`#action-${name}`).click(callback);
             }
-        });
 
-        // setting buttons
-        $(document).ready(function () {
-            const settings = {
-                'remove animation': browser.removeAnimation,
-            };
+            // switch animation
+            $aside.append(
+`<div id="action-remove-animation" class="remove-animation btn btn-outline-primary">
+    <span style="margin-right: 0.5rem">Disable animation</span>
+    <i class="bi bi-film"></i>
+</div>`
+            );
 
-            const $list = $($(".settings > ul"));
+            $aside.find('#action-remove-animation').click(function () {
+                const now = browser.switchAnimation();
 
-            for (const [name, callback] of Object.entries(settings)) {
-                const $item = $($list.find("template").prop("content")).clone().find("li");
-                $item.attr("class", "btn btn-outline-primary");
-                $item.text(name);
-                $item.click(callback);
-
-                $list.append($item);
-            }
+                $(this).find('span').text(now ? 'Disable animation' : 'Enable animation');
+            });
         });
 
         // export const parser = new ExpressionParser();
 
         // LaTeX visualizer
-        $(document).ready(() => $('#function-input').change(function () {
+        $(document).ready(() => $('#function-input').keyup(function () {
             const input = $("#function-input").text();
 
             const expr = new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Variable("z"), new FunctionTree.Const(19)), new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Const(6)), new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(14)))), new FunctionTree.Const(87)), new FunctionTree.Add(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(25))), new FunctionTree.Tanh(new FunctionTree.Const(37))), new FunctionTree.Add(new FunctionTree.Tanh(new FunctionTree.Const(84)), new FunctionTree.Tanh(new FunctionTree.Variable("z"))))));
@@ -149,7 +164,7 @@
             $slider.attr('max', available.length - 1);
             $slider.attr('step', 1);
 
-            const $frametime = $('#frametime-printer');
+            const $frametime = $('#frametime-show');
             const onupdate = () => {
                 const v = available[$slider.val()];
                 $frametime.text(v < 1 ? `1/${1 / v} fps` : `${v}/1 fps`);
@@ -163,6 +178,7 @@
         })
     </script>
 
+    <link rel="icon" href="ad.ico">
     <title>AD Visualization</title>
 </head>
 <body>
@@ -174,37 +190,88 @@
     <div id="function-show">No function is provided</div>
     <div id="function-error"></div>
     <div id="graph"></div>
+    <div id="input-values">
+        <template>
+            <span id="value-name"></span>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>
+                            <label>
+                                <input type="number">
+                            </label>
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+        </template>
+    </div>
 </main>
 <aside>
-    <div class="actions">
-        <ul>
-            <template>
-                <li class="btn btn-outline-primary">
-                    <span style="margin-right: 0.5rem"></span>
-                    <i></i>
-                </li>
-            </template>
-        </ul>
+    <div class="sep1"></div>
+    <div class="fps">
+        <label for="frametime" id="frametime-show" class="marker" style="text-align: center"></label>
+        <input id="frametime" type="range"/>
     </div>
-    <div class="input">
-        <label>
-            <textarea id="function-input"></textarea>
-        </label>
+    <div class="sep2"></div>
+    <div class="function">
+        <label for="function-input" class="marker">Function</label>
+        <textarea id="function-input" class="form-control" placeholder="f(x) = x^2 + 2x + ..."></textarea>
     </div>
-    <i class="separator"></i>
-    <div class="settings">
-        <ul>
+    <div class="variables">
+        <span class="marker">Variables</span>
+        <div class="content">
             <template>
-                <li></li>
+                <div class="var">
+                    <span class="variable-name marker"></span>
+                    <div class="input">
+                        <template>
+                            <label>
+                                <input data-row="0" data-column="0" class="table-item" type="number" step="0.01">
+                            </label>
+                        </template>
+                    </div>
+                    <div class="expand-right btn btn-outline-primary">
+                        <span class="bi bi-caret-right-fill" style="margin-right: 0.5rem"></span>
+                    </div>
+                    <div class="expand-down btn btn-outline-primary">
+                        <span class="bi bi-caret-down-fill"style="margin-right: 0.5rem"></span>
+                    </div>
+                    <i class="unused"></i>
+                </div>
             </template>
-            <li>
-                <label for="frametime"></label>
-                <input id="frametime" type="range"/>
-                <span id="frametime-printer"></span>
-            </li>
-        </ul>
+        </div>
     </div>
 </aside>
+<!--<aside>-->
+<!--    <div class="actions">-->
+<!--        <ul>-->
+<!--            <template>-->
+<!--                <li class="btn btn-outline-primary">-->
+<!--                    <span style="margin-right: 0.5rem"></span>-->
+<!--                    <i></i>-->
+<!--                </li>-->
+<!--            </template>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--    <div class="form-group">-->
+<!--        <label for="function-input">Function:</label>-->
+<!--        <textarea id="function-input" class="form-control" placeholder="f(x) = x^2 + 2x + ..."></textarea>-->
+<!--    </div>-->
+<!--    <i class="separator"></i>-->
+<!--    <div class="settings">-->
+<!--        <ul>-->
+<!--            <template>-->
+<!--                <li></li>-->
+<!--            </template>-->
+<!--            <li>-->
+<!--                <label for="frametime"></label>-->
+<!--                <input id="frametime" type="range"/>-->
+<!--                <span id="frametime-printer"></span>-->
+<!--            </li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</aside>-->
 <footer>
     &copy; AlexSin 2023
 </footer>
