@@ -48,6 +48,17 @@ export namespace AD {
         }
     }
 
+    export class Div extends OperationNode<number[]> {
+        calc(children: number[]) {
+            this.value = children.reduce((a, b) => a / b);
+        }
+
+        diff(children: Map<number, number>, child: number, de: number): number {
+            this.df = de;
+            return - de / (this.value * this.value);
+        }
+    }
+
     export class Tanh extends OperationNode<number> {
         calc(child: number) {
             this.value = Math.tanh(child);
@@ -101,7 +112,7 @@ export class Algo {
                 this.graph.push(new AD.Var());
                 yield {
                     index: this.index,
-                    name: "Variable",
+                    name: level.name,
                     children: [],
                     value: undefined,
                     df: undefined,
@@ -111,8 +122,28 @@ export class Algo {
                 this.graph.push(new AD.Add(children))
                 yield {
                     index: this.index,
-                    name: "Add",
+                    name: level.symbol,
                     children: children,
+                    value: undefined,
+                    df: undefined,
+                };
+            } else if (level instanceof FunctionTree.Div) {
+                let children = level.operands.map((o) => this.tree.get(o)!);
+                this.graph.push(new AD.Div(children))
+                yield {
+                    index: this.index,
+                    name: level.symbol,
+                    children: children,
+                    value: undefined,
+                    df: undefined,
+                };
+            } else if (level instanceof FunctionTree.Tanh) {
+                let children = this.tree.get(level.operands)!;
+                this.graph.push(new AD.Tanh(children))
+                yield {
+                    index: this.index,
+                    name: level.symbol,
+                    children: [children],
                     value: undefined,
                     df: undefined,
                 };

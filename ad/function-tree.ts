@@ -41,7 +41,7 @@ export namespace FunctionTree {
     }
 
     abstract class Operation<Children extends Node | Node[]> implements Node {
-        private readonly symbol: string;
+        readonly symbol: string;
         public readonly operands: Children;
 
         protected constructor(symbol: string, operands: Children) {
@@ -50,7 +50,7 @@ export namespace FunctionTree {
         }
 
         arrangeByDepth(depth: number): [FunctionTree.Node, number][] {
-            const ops: Node[] = this.operands instanceof Node ? [this.operands as Node] : this.operands as Node[];
+            const ops: Node[] = (this.operands instanceof Array ? this.operands as Node[] : [this.operands as Node]);
 
             const deepSearch: [Node, number][] = [[this, depth], ...ops.map((n) => n.arrangeByDepth(depth + 1)).flat()];
             return deepSearch.sort(([_, d1], [__, d2]) => d2 - d1)
@@ -71,10 +71,12 @@ export namespace FunctionTree {
         }
 
         public toTex(): string {
+            console.log(this.operands)
+            console.log(typeof this.operands, typeof Node)
             return this.toTexImpl(...
-                this.operands instanceof Node ?
-                    [(this.operands as Node).toTex()]
-                    : (this.operands as Node[]).map((n) => n.toTex())
+                this.operands instanceof Array ?
+                    (this.operands as Node[]).map((n) => n.toTex())
+                    : [(this.operands as Node).toTex()]
             );
         }
 
@@ -89,13 +91,22 @@ export namespace FunctionTree {
             return a + ' + ' + b;
         }
     }
+    export class Div extends Operation<[Node, Node]> {
+        public constructor(a: Node, b: Node) {
+            super("/", [a, b]);
+        }
+
+        protected toTexImpl(a: string, b: string): string {
+            return `\\dfrac{${a}}{${b}}`;
+        }
+    }
     export class Tanh extends Operation<Node> {
         public constructor(x: Node) {
             super("tanh", x);
         }
 
         protected toTexImpl(x: string): string {
-            return `\\tanh{${x}}`
+            return `\\tanh{\\left(${x}\\right)}`;
         }
     }
 }

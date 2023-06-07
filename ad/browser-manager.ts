@@ -42,7 +42,7 @@ export namespace BrowserManager {
             this.frame(this.frameTime);
         }
 
-        public speedUp(frameTime: number) {
+        public speedup(frameTime: number) {
             this.frameTime = frameTime;
         }
 
@@ -107,6 +107,10 @@ export namespace BrowserManager {
         public setFunction(fun: FunctionTree.Node) {
             this.expr = fun;
             this.player.updateFunction(fun);
+        }
+
+        public speedup(v: Seconds) {
+            this.player.speedup(v * 1000);
         }
     }
 
@@ -183,6 +187,11 @@ export namespace BrowserManager {
 
         private render() {
             GraphManager.graphviz.renderDot(this.graph.toString());
+        }
+
+        public speedup(frametime: number) {
+            GraphManager.graphviz.transition()
+                .delay(frametime / 6).duration(frametime / 2).ease(d3.easeLinear);
         }
     }
 }

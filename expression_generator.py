@@ -14,22 +14,37 @@ def rndConst():
 
 
 def rndVariable():
-    return 'new FunctionTree.Variable(\"' + rndOf('x', 'y', 'z') + '\"")'
+    return 'new FunctionTree.Variable("' + rndOf('x', 'y', 'z') + '")'
 
 
-def rndAdd(i):
-    def nxt():
-        rec = rnd()
+def rndExpr(i):
+    rec = rnd()
 
-        if i < 3 and rec > 50:
-            return rndAdd(i + 1)
-        elif rec > 20:
-            return rndConst()
-        else:
-            return rndVariable()
-        return '?'
+    if i < 3 and rec > 70:
+        return rndBinary(i)
+    if i < 3 and rec > 40:
+        return rndUnary(i)
+    elif rec > 20:
+        return rndConst()
+    else:
+        return rndVariable()
+    return '?'
 
-    return 'new FunctionTree.Add(' + nxt() + ', ' + nxt() + ')'
+
+def rndUnary(i):
+    name = rnd('Tanh')
+
+    return 'new FunctionTree.' + name + '(' + rndExpr(i + 1) + ')'
 
 
-print(rndAdd(0) + ';')
+def rndBinary(i):
+    name = rnd('Add', 'Div')
+
+    return 'new FunctionTree.' + name + '(' + rndExpr(i + 1) + ', ' + rndExpr(i + 1) + ')'
+
+
+def rndFun():
+    return rndExpr(0) + ';'
+
+
+print(rndFun())

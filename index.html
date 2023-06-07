@@ -102,7 +102,8 @@
         $(document).ready(() => $('#function-input').change(function () {
             const input = $("#function-input").text();
 
-            const expr = new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
+            const expr = new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Variable("z"), new FunctionTree.Const(19)), new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Const(6)), new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(14)))), new FunctionTree.Const(87)), new FunctionTree.Add(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(25))), new FunctionTree.Tanh(new FunctionTree.Const(37))), new FunctionTree.Add(new FunctionTree.Tanh(new FunctionTree.Const(84)), new FunctionTree.Tanh(new FunctionTree.Variable("z"))))));
+            // new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
             // const expr = parser.parse(input);
 
             // if (expr.errorFound()) {
@@ -137,6 +138,29 @@
 
             browser.setFunction(expr);
         }));
+
+        // Slider init
+        $(document).ready(() => {
+            // number of frames in one second
+            const available = [0.2, 0.5, 1, 2, 3, 4, 5, 10];
+
+            const $slider = $('#frametime');
+            $slider.attr('min', 0);
+            $slider.attr('max', available.length - 1);
+            $slider.attr('step', 1);
+
+            const $frametime = $('#frametime-printer');
+            const onupdate = () => {
+                const v = available[$slider.val()];
+                $frametime.text(v < 1 ? `1/${1 / v} fps` : `${v}/1 fps`);
+                $frametime.attr('title', v < 1 ? `1 frames /${1 / v} sec` : `${v} frames / 1 ses`);
+
+                browser.speedup(1 / v);
+            };
+            onupdate();
+            $slider.change(onupdate);
+            $slider.mousemove(onupdate);
+        })
     </script>
 
     <title>AD Visualization</title>
@@ -149,7 +173,7 @@
 <main>
     <div id="function-show">No function is provided</div>
     <div id="function-error"></div>
-    <div id="graph" style="text-align: center;"></div>
+    <div id="graph"></div>
 </main>
 <aside>
     <div class="actions">
@@ -173,6 +197,11 @@
             <template>
                 <li></li>
             </template>
+            <li>
+                <label for="frametime"></label>
+                <input id="frametime" type="range"/>
+                <span id="frametime-printer"></span>
+            </li>
         </ul>
     </div>
 </aside>
