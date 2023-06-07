@@ -1,17 +1,19 @@
 :root {
-    --font-family: Comic Sans MS, Comic Sans, cursive;
-    --font-style: italic;
     --font-color: var(--secondary);
     --border-color: var(--primary);
     --separator-color: var(--secondary);
 }
 
 aside {
+    position: relative;
+    float: right;
+    width: auto;
     border: 1px solid var(--border-color);
     border-radius: 0.25rem;
 
     display: grid;
     grid-template-columns: 1fr 1fr;
+    grid-column-gap: 0.5rem;
     grid-template-areas:
             "play step"
             "pause stop"
@@ -24,6 +26,7 @@ aside {
 
 aside > * {
     margin: 0.25rem;
+    max-width: 10rem;
 }
 
 aside > .play {
@@ -59,14 +62,16 @@ aside > .variables {
 
 aside > .sep1,
 aside > .sep2 {
+    max-width: 100%;
     margin: 1rem 0;
     border: 1px solid var(--separator-color);
 }
 
-aside .marker {
+aside * {
     width: 100%;
-    font-family: var(--font-family);
-    font-style: var(--font-style);
+}
+
+aside .marker {
     color: var(--font-color);
 }
 

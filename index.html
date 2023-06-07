@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+<meta name="version" content="v1.0">
+<meta name="build-date" content="06/2023">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -27,7 +29,6 @@
     <!-- local -->
 
     <link rel="stylesheet" type="text/css" href="static/css/base.css">
-    <link rel="stylesheet" type="text/css" href="static/css/ad-style.css">
     <link rel="stylesheet" type="text/css" href="static/css/aside.css">
 
     <!--    <script type="text/javascript" src="ad/functions/functions.js"></script>-->
@@ -66,6 +67,15 @@
 
     <!-- loader -->
 
+    <script type="text/javascript" >
+        $(document).ready(() => {
+            const version = $('meta[name="version"]').attr('content');
+            const buildDate = $('meta[name="build-date"]').attr('content');
+
+            $('footer').append(`<div class="version">${version} \t ${buildDate}</div>`);
+        });
+    </script>
+
     <script type="module">
         import { FunctionTree } from "./ad/function-tree.js";
         import { BrowserManager } from "./ad/browser-manager.js";
@@ -98,8 +108,13 @@
 
             // switch animation
             $aside.append(
-`<div id="action-remove-animation" class="remove-animation btn btn-outline-primary">
-    <span style="margin-right: 0.5rem">Disable animation</span>
+`<div id="action-remove-animation" class="remove-animation btn btn-outline-primary" style="
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    flex-direction: row;
+">
+    <div class="bi">Disable</br>animation</div>
     <i class="bi bi-film"></i>
 </div>`
             );
@@ -107,7 +122,7 @@
             $aside.find('#action-remove-animation').click(function () {
                 const now = browser.switchAnimation();
 
-                $(this).find('span').text(now ? 'Disable animation' : 'Enable animation');
+                $(this).find('span').text(now ? 'Disable</br>animation' : 'Enable</br>branimation');
             });
         });
 
@@ -178,12 +193,12 @@
         })
     </script>
 
-    <link rel="icon" href="ad.ico">
+    <link rel="icon" href="static/img/ad.ico">
     <title>AD Visualization</title>
 </head>
 <body>
 <header>
-    <img src="ad.ico" alt="ad.ico">
+<!--    <img src="static/img/ad.ico" alt="ad.ico">-->
     <h1>Automatic differentiation visualization</h1>
 </header>
 <main>
@@ -243,37 +258,8 @@
         </div>
     </div>
 </aside>
-<!--<aside>-->
-<!--    <div class="actions">-->
-<!--        <ul>-->
-<!--            <template>-->
-<!--                <li class="btn btn-outline-primary">-->
-<!--                    <span style="margin-right: 0.5rem"></span>-->
-<!--                    <i></i>-->
-<!--                </li>-->
-<!--            </template>-->
-<!--        </ul>-->
-<!--    </div>-->
-<!--    <div class="form-group">-->
-<!--        <label for="function-input">Function:</label>-->
-<!--        <textarea id="function-input" class="form-control" placeholder="f(x) = x^2 + 2x + ..."></textarea>-->
-<!--    </div>-->
-<!--    <i class="separator"></i>-->
-<!--    <div class="settings">-->
-<!--        <ul>-->
-<!--            <template>-->
-<!--                <li></li>-->
-<!--            </template>-->
-<!--            <li>-->
-<!--                <label for="frametime"></label>-->
-<!--                <input id="frametime" type="range"/>-->
-<!--                <span id="frametime-printer"></span>-->
-<!--            </li>-->
-<!--        </ul>-->
-<!--    </div>-->
-<!--</aside>-->
 <footer>
-    &copy; AlexSin 2023
+    &copy; Powered by <code>@AlexSin</code>
 </footer>
 </body>
 </html>
