@@ -72,7 +72,7 @@
             const version = $('meta[name="version"]').attr('content');
             const buildDate = $('meta[name="build-date"]').attr('content');
 
-            $('footer').append(`<div class="version">${version} \t ${buildDate}</div>`);
+            $('html').append(`<i class="version">${version} \t ${buildDate}</i>`);
         });
     </script>
 
@@ -136,10 +136,15 @@
             // new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
             // const expr = parser.parse(input);
 
+            // const $functionError = $("#function-error");
             // if (expr.errorFound()) {
-            //     $("#function-error").text(expr.errorFound());
+            //     $functionError.text(expr.errorFound());
+            //     $functionError.show();
             //     return;
+            // } else {
+            //     $functionError.hide();
             // }
+
 
             $('#function-show').text('\\[' + expr.toTex() + '\\]');
 
@@ -198,30 +203,9 @@
 </head>
 <body>
 <header>
-<!--    <img src="static/img/ad.ico" alt="ad.ico">-->
+    <img src="static/img/ad.ico" alt="ad.ico" class="icon">
     <h1>Automatic differentiation visualization</h1>
 </header>
-<main>
-    <div id="function-show">No function is provided</div>
-    <div id="function-error"></div>
-    <div id="graph"></div>
-    <div id="input-values">
-        <template>
-            <span id="value-name"></span>
-            <table>
-                <tbody>
-                    <tr>
-                        <th>
-                            <label>
-                                <input type="number">
-                            </label>
-                        </th>
-                    </tr>
-                </tbody>
-            </table>
-        </template>
-    </div>
-</main>
 <aside>
     <div class="sep1"></div>
     <div class="fps">
@@ -258,6 +242,32 @@
         </div>
     </div>
 </aside>
+<main>
+    <div class="function-show">
+        <div id="function-show">No function is provided</div>
+        <div id="function-error" hidden></div>
+    </div>
+    <label for="player" style="width: 100%;">
+        <input id="player" type="range" style="width: 100%" min="0" max="1" step="1"/>
+    </label>
+    <div id="graph"></div>
+    <div id="input-values">
+        <template>
+            <span id="value-name"></span>
+            <table>
+                <tbody>
+                    <tr>
+                        <th>
+                            <label>
+                                <input type="number">
+                            </label>
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+        </template>
+    </div>
+</main>
 <footer>
     &copy; Powered by <code>@AlexSin</code>
 </footer>

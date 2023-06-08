@@ -8,6 +8,7 @@ aside {
     position: relative;
     float: right;
     width: auto;
+    margin: 1rem 1rem 6% 0;
     border: 1px solid var(--border-color);
     border-radius: 0.25rem;
 

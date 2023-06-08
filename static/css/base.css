@@ -4,13 +4,6 @@
     font-size: 16px;
 }
 
-html {
-    padding: 1rem;
-    min-width: 600px;
-    max-width: 1280px;
-    margin: 0 auto;
-}
-
 @media (max-width: 1024px) {
     :root {
         font-size: 14px;
@@ -26,18 +19,16 @@ html {
 header {
     position: relative;
     background-color: var(--primary);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    padding: 1rem;
 }
 
-header > h1::before {
-    content: '';
-    position: relative;
+header > .icon {
     display: inline-block;
     width: 10rem;
-    height: 4rem;
-
-    background-image: url('../img/ad.ico');
-    background-size: contain;
-    background-repeat: no-repeat;
+    height: auto;
 }
 
 header > h1 {
@@ -50,16 +41,33 @@ header > h1 {
 }
 
 main {
+    /*position: relative;*/
+    width: auto;
+    height: auto;
+    margin: 1rem 23rem 6% 1rem;
+}
 
+main > .function-show {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
 }
 
 footer {
+    position: fixed;
+    bottom: 3%;
+    right: 5%;
+    padding: 1rem;
+    width: 90%;
     border-top: 1px solid var(--secondary);
     text-align: center;
 }
 
 .version {
-    position: relative;
-    float: right;
+    position: fixed;
+    float: bottom;
+    bottom: 1rem;
+    right: 1rem;
+    font-size: 0.7rem;
     color: var(--secondary);
 }
