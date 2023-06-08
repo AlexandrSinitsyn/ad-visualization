@@ -32,7 +32,7 @@ main {
     /*position: relative;*/
     width: auto;
     height: auto;
-    margin: 1rem 23rem 6% 1rem;
+    margin: 1rem 23rem 1rem 1rem;
 }
 
 main > .function-show {
@@ -45,12 +45,16 @@ main > .function-show > * * {
     font-size: 16px;
 }
 
+main > #graph,
+main > #graph > * {
+    width: auto;
+    height: 100%;
+}
+
 footer {
-    position: fixed;
-    bottom: 3%;
-    right: 5%;
-    padding: 1rem;
-    width: 90%;
+    position: relative;
+    margin: 0 5% 3%;
+    width: calc(90% - 23rem);
     border-top: 1px solid var(--secondary);
     text-align: center;
 }
