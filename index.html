@@ -84,6 +84,11 @@
 
         console.log("Browser manager:", browser);
 
+        // fixme
+        function notify(message) {
+            alert(message);
+        }
+
         // setup aside
         $(document).ready(function () {
             const elements = {
@@ -126,6 +131,61 @@
             });
         });
 
+        // setup variables-input
+        $(document).ready(function () {
+            let variables = 0;
+
+            const $variables = $('.variables').find('.content');
+
+            function newVar(name) {
+                const $new = $($variables.find('template').prop('content')).clone();
+
+                const $cell = $($new.find('template').prop('content'));
+
+                const $tbody = $new.find('tbody');
+
+                const getRowCount = () => $tbody.children().length;
+                const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
+
+                const newRow = () => {
+                    if (getRowCount() >= 4) {
+                        notify('Number of rows is not supported to be greater than 4')
+                        return;
+                    }
+
+                    const $tr = $('<tr></tr>').appendTo($tbody);
+                    $tbody.children().first().children().each(() => $tr.append($cell.clone()));
+                };
+                const newCol = () => {
+                    if (getColCount() >= 4) {
+                        notify('Number of columns is not supported to be greater than 4')
+                        return;
+                    }
+
+                    $tbody.children().each((_, c) => $(c).append($cell.clone()))
+                };
+
+                // single cell
+                newRow();
+                newCol();
+
+                $new.find('.expand-right').click(newCol);
+                $new.find('.expand-down').click(newRow);
+
+                $variables.append($new);
+
+                const $appender = $('.new-var').clone(true);
+                $('.new-var').remove();
+
+                if ($variables.children().length < 5) {
+                    $variables.append($appender);
+                }
+            }
+
+            // noinspection JSJQueryEfficiency
+            $('.new-var').click(() => newVar());
+        });
+
         // export const parser = new ExpressionParser();
 
         // LaTeX visualizer
@@ -148,30 +208,11 @@
 
             $('#function-show').text('\\[' + expr.toTex() + '\\]');
 
-            // const $iframe = $("#function-show").html('<iframe id="math-tex"></iframe>').find('#math-tex');
-            // let contentDocument = $iframe[0].contentDocument;
-            // contentDocument.open();
-            // contentDocument.write('<main></main>');
-            // contentDocument.close();
-            //
-            //     const $main = $iframe.contents().find('main');
-            // $iframe.ready(() => $(function () {
-            //     // hack to load lib into iframe
-            //     // const res = $(this).append('<scr' + 'ipt id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></scr' + 'ipt>');
-            //     // $(this).append('<div>asd</div>');
-            //     //
-            //     // console.log(res)
-            //
-            //     $main.append('<p id="formula"></p>')
-            //
-            //     $main.find("#formula").text('\\[' + expr.toTex() + '\\]');
-            //
-            //     $main.prepend($($("#mathjax-template").prop('content')).clone());
-            // }));
-
             MathJax.typeset();
 
             browser.setFunction(expr);
+
+            $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $('#player').height() + 'px - 2rem)');
         }));
 
         // Slider init
@@ -222,23 +263,29 @@
         <div class="content">
             <template>
                 <div class="var">
-                    <span class="variable-name marker"></span>
-                    <div class="input">
+                    <label class="variable-name">
+                        <input class="marker" type="text" placeholder="name"/>
+                    </label>
+                    <table class="input">
                         <template>
-                            <label>
-                                <input data-row="0" data-column="0" class="table-item" type="number" step="0.01">
-                            </label>
+                            <th>
+                                <label>
+                                    <input class="table-item" type="number" step="0.01">
+                                </label>
+                            </th>
                         </template>
-                    </div>
+                        <tbody>
+                        </tbody>
+                    </table>
                     <div class="expand-right btn btn-outline-primary">
-                        <span class="bi bi-caret-right-fill" style="margin-right: 0.5rem"></span>
+                        <span class="bi bi-caret-right-fill"></span>
                     </div>
                     <div class="expand-down btn btn-outline-primary">
-                        <span class="bi bi-caret-down-fill"style="margin-right: 0.5rem"></span>
+                        <span class="bi bi-caret-down-fill"></span>
                     </div>
-                    <i class="unused"></i>
                 </div>
             </template>
+            <span class="new-var btn btn-outline-primary bi bi-plus-lg"></span>
         </div>
     </div>
 </aside>
@@ -251,22 +298,6 @@
         <input id="player" type="range" style="width: 100%" min="0" max="1" step="1" value="0"/>
     </label>
     <div id="graph"></div>
-    <div id="input-values">
-        <template>
-            <span id="value-name"></span>
-            <table>
-                <tbody>
-                    <tr>
-                        <th>
-                            <label>
-                                <input type="number">
-                            </label>
-                        </th>
-                    </tr>
-                </tbody>
-            </table>
-        </template>
-    </div>
 </main>
 <footer>
     &copy; Powered by <code>@AlexSin</code>

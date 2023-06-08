@@ -29,10 +29,16 @@ header > h1 {
 }
 
 main {
-    /*position: relative;*/
-    width: auto;
-    height: auto;
-    margin: 1rem 23rem 1rem 1rem;
+    position: relative;
+    /* fake -1px so that margin work properly */
+    width: calc(75vw - 1px);
+    max-height: 75vh;
+    margin: 1rem;
+    overflow: auto;
+}
+
+main::-webkit-scrollbar {
+    display: none;
 }
 
 main > .function-show {
@@ -45,16 +51,23 @@ main > .function-show > * * {
     font-size: 16px;
 }
 
-main > #graph,
+main > #graph {
+    width: auto;
+    /*height: 65vh;*/
+    border: 1px solid var(--secondary);
+    border-radius: 0.25rem;
+}
+
 main > #graph > * {
     width: auto;
     height: 100%;
 }
 
 footer {
-    position: relative;
-    margin: 0 5% 3%;
-    width: calc(90% - 23rem);
+    position: absolute;
+    bottom: 5%;
+    margin: 0 5%;
+    width: 90%;
     border-top: 1px solid var(--secondary);
     text-align: center;
 }
