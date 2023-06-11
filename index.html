@@ -206,16 +206,18 @@
             // }
 
 
-            $('#function-show').text('\\[' + expr.toTex() + '\\]');
+            const $function = $('#function-show');
+            $function.text('\\[' + expr.toTex() + '\\]');
 
             MathJax.typeset();
 
-            browser.setFunction(expr);
+            const max = browser.setFunction(expr);
+            $('#player').attr('max', max)
 
             $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $('#player').height() + 'px - 2rem)');
         }));
 
-        // Slider init
+        // fps init
         $(document).ready(() => {
             // number of frames in one second
             const available = [0.2, 0.5, 1, 2, 3, 4, 5, 10];
@@ -236,6 +238,12 @@
             onupdate();
             $slider.change(onupdate);
             $slider.mousemove(onupdate);
+        })
+
+        // player init
+        $(document).ready(function () {
+            const $player = $('#player');
+            $player.mousemove(() => browser.moveTo($player.val()));
         })
     </script>
 

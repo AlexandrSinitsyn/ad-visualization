@@ -46,8 +46,9 @@ export namespace BrowserManager {
             this.frameTime = frameTime;
         }
 
-        public updateFunction(fun: FunctionTree.Node) {
+        public updateFunction(fun: FunctionTree.Node): number {
             this.algo = new Algo(fun).step();
+            return this.graphManager.init(this.algo);
         }
     }
 
@@ -100,13 +101,11 @@ export namespace BrowserManager {
             this.pause();
 
             this.graphManager.reset();
-
-            this.player.updateFunction(this.expr);
         }
 
-        public setFunction(fun: FunctionTree.Node) {
+        public setFunction(fun: FunctionTree.Node): number {
             this.expr = fun;
-            this.player.updateFunction(fun);
+            return this.player.updateFunction(fun);
         }
 
         public speedup(v: Seconds) {
@@ -116,34 +115,53 @@ export namespace BrowserManager {
         public switchAnimation(): boolean {
             return this.graphManager.switchAnimation();
         }
+
+        public moveTo(frame: number) {
+            this.graphManager.moveTo(frame);
+        }
     }
 
     class Graph {
         private readonly nodes: AlgoUpdate[] = []
 
-        public apply(update: AlgoUpdate) {
-            const previous = this.nodes.find((e) => e.index === update.index);
+        public accept(update: AlgoUpdate) {
+            this.nodes.push(update)
+        }
 
-            if (!previous) {
-                this.nodes.push(update);
-                return
+        private apply(until: number): AlgoUpdate[] {
+            const res: AlgoUpdate[] = [];
+
+            for (let i = 0; i < until; i++) {
+                const u = this.nodes[i];
+                const previous = res.find((e) => e.index === u.index);
+
+                if (!previous) {
+                    res.push(u);
+                    continue;
+                }
+
+                previous.value = u.value;
+                previous.df = u.df;
             }
 
-            previous.value = update.value;
-            previous.df = update.df;
+            return res;
         }
 
         public reset() {
             this.nodes.length = 0;
         }
 
-        public toString(): string {
+        public frameCount(): number {
+            return this.nodes.length;
+        }
+
+        public toString(until: number): string {
             let res = "digraph {\n";
 
             res += "rankdir=RL;\n"
             res += "node [shape=Mrecord, color=blue];\n"
 
-            for (const {index, name, children, value, df} of this.nodes) {
+            for (const {index, name, children, value, df} of this.apply(until)) {
                 res += `${index} [label="${name}|{val: ${value ?? ''}|df:${df ?? ''}}"];\n`;
                 for (const child of children) {
                     res += `${index} -> ${child};\n`;
@@ -160,6 +178,7 @@ export namespace BrowserManager {
         private static graphviz: any;
         private graph: Graph;
         private isAnimated: boolean;
+        private step: number;
 
         public constructor(elementId: string) {
             try {
@@ -177,22 +196,42 @@ export namespace BrowserManager {
             }
             this.graph = new Graph();
             this.isAnimated = true;
+            this.step = 0;
+        }
+
+        public init(steps: Generator<AlgoUpdate>): number {
+            this.graph.reset();
+
+            let nxt = steps.next();
+            while (!nxt.done) {
+                this.graph.accept(nxt.value);
+                nxt = steps.next();
+            }
+
+            return this.graph.frameCount();
         }
 
         public onUpdate(update: AlgoUpdate) {
-            this.graph.apply(update);
+            // this.graph.accept(update);
+            this.step++;
 
             this.render();
         }
 
+        public moveTo(frame: number) {
+            this.step = frame;
+            this.render();
+        }
+
         public reset() {
-            this.graph.reset();
+            this.step = 0;
+            // this.graph.reset();
 
             this.render();
         }
 
         private render() {
-            GraphManager.graphviz.renderDot(this.graph.toString());
+            GraphManager.graphviz.renderDot(this.graph.toString(this.step));
         }
 
         public speedup(frametime: number) {
