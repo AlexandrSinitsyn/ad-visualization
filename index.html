@@ -43,6 +43,17 @@
     <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/nearley@2.20.1/lib/nearley.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moo@0.5.2/moo.min.js"></script>
+    <script type="module" src="parser/grammar.js"></script>
+    <script type="module" src="parser/parser.js"></script>
+    <script type="module">
+        import { parse } from "./parser/parser.js";
+
+        const result = parse("f=123.456 + x + 3");
+        console.log('##33', result);
+    </script>
+
     <!-- mathjax -->
 
     <script>
