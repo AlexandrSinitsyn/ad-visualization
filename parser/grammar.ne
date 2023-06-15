@@ -4,9 +4,9 @@
 // @ts-ignore
 const lexer = moo.compile({
     float: /0|[+-]?[1-9][0-9]*(?:\.[0-9]*)?(?:[eE][+-]?[1-9][0-9]*)?/,
-    eq: "=",
+    syntax: ["=", "(", ",", ")"],
     name: /[a-zA-Z]+/,
-    infix: /\S+/,
+    infix: /[+\-*/]/,
     ws: { match: /[ \t\n\r\f]/, lineBreaks: true },
 });
 %}
@@ -39,48 +39,47 @@ import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from "./pa
 
 export const graph: Node[] = [];
 export const rules: string[] = [];
-export const functions: string[] = [];
-export const infixr = ['+', '*'];
-export const infixl = ['-', '/'];
+export const functions: string[] = ['+', '-', '*', '/'];
 
-function opOr(name: string, lookup: string[], ...operands: Node[]): Node {
-    return lookup.includes(name) ? new Operation(name, operands)
+function opOr(name: string, ...operands: Node[]): Node {
+    return functions.includes(name) ? new Operation(name, operands)
         : rules.includes(name) ? new RuleRef(name, operands)
             : new ErrorNode(name, operands);
 }
+
+function unwrap(args: any[]): any[] {
+    const value = (e: any) => e === null ? null : e.hasOwnProperty("value") ? e["value"] : e;
+
+    return args.map((e: any) => value(e)).filter((e: any) => e !== null).map((e: any) => e instanceof Array ? unwrap(e as any[]) : e);
+}
+
+function _(fn: (args: any[]) => any): any {
+    return (d: any[]) => fn(unwrap(d));
+}
 %}
 
-main -> _ input _ {% (d) => d[1] %}
+main -> (_ expression _):+ {% (d) => d[0].map((e: any) => e[1]) %}
 
-input -> _ (expression _):+ _ {% (d) => d[1].map((e: any) => e[0]) %}
-
-expression -> _ rulename _ "=" _ function _ {%
-    function (d) {
-        console.log(d);
-        rules.push(d[1]);
-        return new Rule(d[1], d[5]);
-    }
+expression -> %name _ "=" _ function {%
+    _(([rulename, , content]) => {
+        rules.push(rulename);
+        return new Rule(rulename, content);
+    })
 %}
 
 function ->
-    _ component _ {% (d) => d[1] %}
-  | _ function _ infixl _ component _ {% (d) => opOr(d[3], infixl, d[1], d[5]) %}
-  | _ component _ infixr _ function _ {% (d) => opOr(d[3], infixr, d[1], d[5]) %}
+    component _ %infix _ function {% _(([left, op, right]) => new Operation(op, [left, right])) %}
+  | component {% id %}
 
 
 component ->
-    _ operand _ {% (d) => d[1] %}
-  | _ funname _ "(" _ component _ ("," _ component _):* _ ")" _ {% (d) => opOr(d[1], functions, d[5], ...d[7].map((e: any) => e[2])) %}
-
-rulename -> _ %name _ {% (d) => d[0] %}
-
-infixl -> _ %infix _ {% (d) => d[1] %}
-infixr -> _ %infix _ {% (d) => d[1] %}
+    operand {% id %}
+  | %name _ "(" _ component _ ("," _ component _):* _ ")" {%
+    _(([op, , first, rest, ]) => opOr(op, first, ...rest.map((e: any) => e[1])))
+%}
 
 operand ->
-    _ %float _ {% (d) => new Const(d[1]) %}
-  | _ %name _ {% (d) => new Variable(d[1]) %}
+    %float {% _(([v]) => new Const(+v)) %}
+  | %name {% _(([n]) => new Variable(n)) %}
 
-funname -> _ %name _ {% (d) => d[1] %}
-
-_ -> %ws:* {% function (d) { return null; } %}
+_ -> %ws:* {% () => null %}

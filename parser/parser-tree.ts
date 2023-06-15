@@ -19,6 +19,10 @@ export class ErrorNode extends Node {
         this.content = content;
         this.children = children;
     }
+
+    public toString(): string {
+        return `ERROR[${this.content}] of (${this.children.map((e) => e.toString()).join(", ")})`;
+    }
 }
 
 export class Const extends Node {
@@ -28,6 +32,10 @@ export class Const extends Node {
         super();
         this.v = v;
     }
+
+    public toString(): string {
+        return this.v + '';
+    }
 }
 
 export class Variable extends Node {
@@ -36,6 +44,10 @@ export class Variable extends Node {
     public constructor(name: string) {
         super();
         this.name = name;
+    }
+
+    public toString(): string {
+        return this.name;
     }
 }
 
@@ -48,6 +60,10 @@ export class RuleRef extends Node {
         this.name = name;
         this.operands = operands;
     }
+
+    public toString(): string {
+        return `ref:${this.name}(${this.operands.map((e) => e.toString()).join(", ")})`;
+    }
 }
 
 export class Operation extends Node {
@@ -58,6 +74,10 @@ export class Operation extends Node {
         super();
         this.name = name;
         this.children = children;
+    }
+
+    public toString(): string {
+        return `${this.name}(${this.children.map((e) => e.toString()).join(", ")})`;
     }
 }
 

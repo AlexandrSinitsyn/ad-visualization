@@ -48,9 +48,18 @@
     <script type="module" src="parser/grammar.js"></script>
     <script type="module" src="parser/parser.js"></script>
     <script type="module">
-        import { parse } from "./parser/parser.js";
+        import { parse, E, C, V, Sum, Err } from "./parser/parser.js";
 
-        const result = parse("f=123.456 + x + 3");
+        console.log('asd')
+        const result = parse(
+            "f = x + 3 + x + 3 + 5",
+            (v) => new C(v),
+            (name) => new V(name),
+            new Map([
+                ['+', (...args) => new Sum(args)]
+            ]),
+            (message, children) => new Err(message, children)
+        );
         console.log('##33', result);
     </script>
 
