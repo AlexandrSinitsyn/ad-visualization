@@ -41,10 +41,10 @@ export const graph: Node[] = [];
 export const rules: string[] = [];
 export const functions: string[] = ['+', '-', '*', '/'];
 
-function opOr(name: string, ...operands: Node[]): Node {
+function opOr(name: string, message: string, ...operands: Node[]): Node {
     return functions.includes(name) ? new Operation(name, operands)
         : rules.includes(name) ? new RuleRef(name, operands)
-            : new ErrorNode(name, operands);
+            : new ErrorNode(name, message, operands);
 }
 
 function unwrap(args: any[]): any[] {
@@ -75,11 +75,11 @@ function ->
 component ->
     operand {% id %}
   | %name _ "(" _ component _ ("," _ component _):* _ ")" {%
-    _(([op, , first, rest, ]) => opOr(op, first, ...rest.map((e: any) => e[1])))
+    _(([op, , first, rest, ]) => opOr(op, `Unknown function ${op}(...)`, first, ...rest.map((e: any) => e[1])))
 %}
 
 operand ->
     %float {% _(([v]) => new Const(+v)) %}
   | %name {% _(([n]) => new Variable(n)) %}
 
-_ -> %ws:* {% () => null %}
+_ -> %ws:+ {% () => null %}

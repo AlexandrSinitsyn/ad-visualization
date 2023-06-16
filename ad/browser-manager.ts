@@ -46,7 +46,7 @@ export namespace BrowserManager {
             this.frameTime = frameTime;
         }
 
-        public updateFunction(fun: FunctionTree.Node): number {
+        public updateFunction(fun: FunctionTree.Node[]): number {
             this.algo = new Algo(fun).step();
             return this.graphManager.init(this.algo);
         }
@@ -57,7 +57,7 @@ export namespace BrowserManager {
     export class ExpressionManager {
         private player: Player;
         private isOn: boolean;
-        private expr: FunctionTree.Node | undefined;
+        private expr: FunctionTree.Node[] | undefined;
         private readonly graphManager: GraphManager;
 
         public constructor(graphManager: GraphManager, frame: Seconds) {
@@ -103,9 +103,9 @@ export namespace BrowserManager {
             this.graphManager.reset();
         }
 
-        public setFunction(fun: FunctionTree.Node): number {
-            this.expr = fun;
-            return this.player.updateFunction(fun);
+        public setFunction(graph: FunctionTree.Node[]): number {
+            this.expr = graph;
+            return this.player.updateFunction(graph);
         }
 
         public speedup(v: Seconds) {

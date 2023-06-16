@@ -47,21 +47,6 @@
     <script src="https://cdn.jsdelivr.net/npm/moo@0.5.2/moo.min.js"></script>
     <script type="module" src="parser/grammar.js"></script>
     <script type="module" src="parser/parser.js"></script>
-    <script type="module">
-        import { parse, E, C, V, Sum, Err } from "./parser/parser.js";
-
-        console.log('asd')
-        const result = parse(
-            "f = x + 3 + x + 3 + 5",
-            (v) => new C(v),
-            (name) => new V(name),
-            new Map([
-                ['+', (...args) => new Sum(args)]
-            ]),
-            (message, children) => new Err(message, children)
-        );
-        console.log('##33', result);
-    </script>
 
     <!-- mathjax -->
 
@@ -97,12 +82,13 @@
     </script>
 
     <script type="module">
-        import { FunctionTree } from "./ad/function-tree.js";
         import { BrowserManager } from "./ad/browser-manager.js";
+        import { parseFunction } from "./parser/parser.js";
 
         export const browser = new BrowserManager.ExpressionManager(new BrowserManager.GraphManager("graph"), 3);
 
         console.log("Browser manager:", browser);
+        console.log('parser', (input) => parseFunction(input));
 
         // fixme
         function notify(message) {
@@ -206,32 +192,29 @@
             $('.new-var').click(() => newVar());
         });
 
-        // export const parser = new ExpressionParser();
-
         // LaTeX visualizer
         $(document).ready(() => $('#function-input').keyup(function () {
-            const input = $("#function-input").text();
+            const input = $("#function-input").val();
 
-            const expr = new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Variable("z"), new FunctionTree.Const(19)), new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Const(6)), new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(14)))), new FunctionTree.Const(87)), new FunctionTree.Add(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(25))), new FunctionTree.Tanh(new FunctionTree.Const(37))), new FunctionTree.Add(new FunctionTree.Tanh(new FunctionTree.Const(84)), new FunctionTree.Tanh(new FunctionTree.Variable("z"))))));
+            // const expr = new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Variable("z"), new FunctionTree.Const(19)), new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Const(6)), new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(14)))), new FunctionTree.Const(87)), new FunctionTree.Add(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(25))), new FunctionTree.Tanh(new FunctionTree.Const(37))), new FunctionTree.Add(new FunctionTree.Tanh(new FunctionTree.Const(84)), new FunctionTree.Tanh(new FunctionTree.Variable("z"))))));
             // new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
-            // const expr = parser.parse(input);
 
-            // const $functionError = $("#function-error");
-            // if (expr.errorFound()) {
-            //     $functionError.text(expr.errorFound());
-            //     $functionError.show();
-            //     return;
-            // } else {
-            //     $functionError.hide();
-            // }
+            const expr = parseFunction(input);
 
+            const $functionError = $("#function-error");
+            if (!expr.isOk()) {
+                $functionError.text(expr.error());
+                $functionError.show();
+            } else {
+                $functionError.hide();
+            }
 
             const $function = $('#function-show');
-            $function.text('\\[' + expr.toTex() + '\\]');
+            $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
 
             MathJax.typeset();
 
-            const max = browser.setFunction(expr);
+            const max = browser.setFunction(expr.graph);
             $('#player').attr('max', max)
 
             $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $('#player').height() + 'px - 2rem)');
@@ -320,7 +303,7 @@
 <main>
     <div class="function-show">
         <div id="function-show">No function is provided</div>
-        <div id="function-error" hidden></div>
+        <div id="function-error" style="color: red" hidden></div>
     </div>
     <label for="player" style="width: 100%;">
         <input id="player" type="range" style="width: 100%" min="0" max="1" step="1" value="0"/>

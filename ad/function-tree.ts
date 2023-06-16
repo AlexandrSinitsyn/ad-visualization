@@ -1,13 +1,13 @@
 export namespace FunctionTree {
     export interface Node {
-        arrangeByDepth(depth: number): [Node, number][];
+        arrangeByDepth(depth: number): Map<number, Node[]>
         toString(): string;
         toTex(): string;
     }
 
     abstract class Element implements Node {
-        public arrangeByDepth(depth: number): [FunctionTree.Node, number][] {
-            return [[this, depth]];
+        public arrangeByDepth(depth: number): Map<number, Node[]> {
+            return new Map([[depth, [this]]]);
         }
 
         public toTex(): string {
@@ -40,73 +40,95 @@ export namespace FunctionTree {
         }
     }
 
-    abstract class Operation<Children extends Node | Node[]> implements Node {
-        readonly symbol: string;
-        public readonly operands: Children;
+    enum OperationType {
+        PREFIX,
+        POSTFIX,
+        INFIX,
+        FUNCTION,
+    }
 
-        protected constructor(symbol: string, operands: Children) {
+    abstract class Operation implements Node {
+        public readonly symbol: string;
+        public readonly type: OperationType;
+        public readonly operands: Node[];
+
+        protected constructor(symbol: string, type: OperationType, operands: Node[]) {
             this.symbol = symbol;
+            this.type = type;
             this.operands = operands;
         }
 
-        arrangeByDepth(depth: number): [FunctionTree.Node, number][] {
-            const ops: Node[] = (this.operands instanceof Array ? this.operands as Node[] : [this.operands as Node]);
+        arrangeByDepth(depth: number): Map<number, FunctionTree.Node[]> {
+            return this.operands.map((n) => n.arrangeByDepth(depth + 1)).reduce((t, c) => {
+                [...c.entries()].forEach(([k, v]) => {
+                    if (!t.has(k)) {
+                        t.set(k, []);
+                    }
 
-            const deepSearch: [Node, number][] = [[this, depth], ...ops.map((n) => n.arrangeByDepth(depth + 1)).flat()];
-            return deepSearch.sort(([_, d1], [__, d2]) => d2 - d1)
+                    t.get(k)!.push(...v);
+                })
+
+                return t;
+            });
         }
 
         public toString(): string {
-            if (this.operands instanceof Node) {
-                return this.symbol + this.operands.toString();
-            } else {
-                const ops = this.operands as Node[];
-
-                if (ops.length === 2) {
-                    return ops[0].toString() + ` ${this.symbol} ` + ops[1].toString();
-                } else {
-                    return this.symbol + "(" + ops.join(", ") + ")";
-                }
+            switch (this.type) {
+                case OperationType.PREFIX:
+                    return this.symbol + this.operands.join(" ");
+                case OperationType.POSTFIX:
+                    return this.operands.join(" ") + this.symbol;
+                case OperationType.INFIX:
+                    return this.operands.join(` ${this.symbol} `);
+                case OperationType.FUNCTION:
+                    return this.symbol + "(" + this.operands.join(", ") + ")";
             }
         }
 
         public toTex(): string {
-            console.log(this.operands)
-            console.log(typeof this.operands, typeof Node)
-            return this.toTexImpl(...
-                this.operands instanceof Array ?
-                    (this.operands as Node[]).map((n) => n.toTex())
-                    : [(this.operands as Node).toTex()]
-            );
+            return this.toTexImpl(...this.operands.map((n) => n.toTex()));
         }
 
-        protected abstract toTexImpl(...children: string[]): string;
-    }
-    export class Add extends Operation<[Node, Node]> {
-        public constructor(a: Node, b: Node) {
-            super("+", [a, b]);
-        }
-
-        protected toTexImpl(a: string, b: string): string {
-            return a + ' + ' + b;
+        protected toTexImpl(...children: string[]): string {
+            return this.toString().replace(' ', '~');
         }
     }
-    export class Div extends Operation<[Node, Node]> {
-        public constructor(a: Node, b: Node) {
-            super("/", [a, b]);
+    export class Add extends Operation {
+        public constructor(args: Node[]) {
+            super("+", OperationType.INFIX, args);
+        }
+    }
+    export class Div extends Operation {
+        public constructor(args: Node[]) {
+            super("/", OperationType.INFIX, args);
         }
 
         protected toTexImpl(a: string, b: string): string {
             return `\\dfrac{${a}}{${b}}`;
         }
     }
-    export class Tanh extends Operation<Node> {
+    export class Tanh extends Operation {
         public constructor(x: Node) {
-            super("tanh", x);
+            super("tanh", OperationType.FUNCTION, [x]);
         }
 
         protected toTexImpl(x: string): string {
             return `\\tanh{\\left(${x}\\right)}`;
+        }
+    }
+
+    export class ErrorNode extends Operation {
+        private readonly content: string;
+        private readonly message: string;
+
+        public constructor(content: string, message: string, children: Node[]) {
+            super('???', OperationType.FUNCTION, children);
+            this.content = content;
+            this.message = message;
+        }
+
+        protected toTexImpl(children: string): string {
+            return `{\\color{red} ${this.content}}\\left(${this.operands.join(", ")}\\right)`;
         }
     }
 }

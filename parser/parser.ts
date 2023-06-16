@@ -1,21 +1,54 @@
 import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
+import { FunctionTree } from "../ad/function-tree.js";
 import grammar from "./grammar.js";
 
 class ParserError extends Error {}
 
-export function parse<Tree>(
+class ParserResult<Tree> {
+    private readonly functions: Tree[] | undefined;
+    private readonly _graph: Tree[] | undefined;
+    private readonly err: string | undefined;
+
+    public constructor(functions: Tree[], graph: Tree[]);
+    public constructor(functions: Tree[], graph: Tree[], err: string);
+    public constructor(functions?: Tree[], graph?: Tree[], err?: string) {
+        this.functions = functions;
+        this._graph = graph;
+        this.err = err;
+    }
+
+    public isOk(): boolean {
+        return this.err === undefined;
+    }
+
+    public error(): string {
+        return this.err!;
+    }
+
+    public expr(): Tree[] {
+        return this.functions!;
+    }
+
+    get graph(): Tree[] {
+        return this._graph!;
+    }
+}
+
+function parseToTree<Tree>(
     input: string,
     cnst: (v: number) => Tree,
     vrb: (name: string) => Tree,
-    ops: Map<string, (args: Tree[]) => Tree>,
-    onError: (name: string, args: Tree[]) => Tree
-): Tree[] {
+    ops: Map<string, (...args: Tree[]) => Tree>,
+    onError: (content: string, message: string, args: Tree[]) => Tree
+): [Tree[], Tree[]] {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     parser.feed(input);
     const result = parser.results;
 
-    if (result.length == 0) {
+    console.log('>>>>>', result)
+
+    if (result.length === 0) {
         throw new ParserError("Input matches nothing");
     }
 
@@ -64,12 +97,14 @@ export function parse<Tree>(
                         const operation = ops.get(op.name);
 
                         if (!operation) {
-                            return onError(op.name, operands);
+                            return onError(op.name, `Unknown operation ${op.name}(...)`, operands);
                         }
 
-                        return operation(operands);
+                        return operation(...operands);
                     case ErrorNode:
-                        return onError((v as ErrorNode).content, (v as ErrorNode).children.map((e) => pieces.get(e.toString())!))
+                        const err = v as ErrorNode;
+
+                        return onError(err.content, err.message, err.children.map((e) => pieces.get(e.toString())!))
                     default:
                         throw new ParserError("Parsed graph somehow contains a Node which type is not supported");
                 }
@@ -86,38 +121,37 @@ export function parse<Tree>(
 
     graph.forEach(convert);
 
-    return [...pieces.values()];
+    return [[...rules.values()], [...pieces.values()]];
 }
 
-export abstract class E {}
-export class C implements E {
-    private readonly v: number;
+// fixme
+export const parseFunction = (input: string): ParserResult<FunctionTree.Node> => {
+    const errors: [string, string][] = [];
 
-    constructor(v: number) {
-        this.v = v;
+    try {
+        const [rules, graph] = parseToTree<FunctionTree.Node>(
+            input,
+            (v) => new FunctionTree.Const(v),
+            (name) => new FunctionTree.Variable(name),
+            new Map([
+                ['+', (...args) => new FunctionTree.Add(args)],
+                ['/', (...args) => new FunctionTree.Div(args)],
+                ['tanh', (x) => new FunctionTree.Tanh(x)],
+            ]),
+            (content, message, children) => {
+                errors.push([content, message]);
+                return new FunctionTree.ErrorNode(content, message, children);
+            }
+        );
+
+        return errors.length > 0
+            ? new ParserResult<FunctionTree.Node>(rules, graph, errors.map(([from, message]) => '> ' + message).join('\n'))
+            : new ParserResult<FunctionTree.Node>(rules, graph);
+    } catch (pe: any) {
+        if (pe instanceof ParserError) {
+            return new ParserResult<FunctionTree.Node>([], [], pe.message);
+        } else {
+            throw pe;
+        }
     }
 }
-export class V implements E {
-    private readonly name: string;
-
-    constructor(name: string) {
-        this.name = name;
-    }
-}
-export class Sum implements E {
-    private readonly args: E[];
-
-    constructor(args: E[]) {
-        this.args = args;
-    }
-}
-export class Err implements E {
-    private readonly message: string;
-    private readonly args: E[];
-
-    constructor(message: string, args: E[]) {
-        this.message = message;
-        this.args = args;
-    }
-}
-

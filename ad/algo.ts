@@ -79,13 +79,13 @@ export interface AlgoUpdate {
 }
 
 export class Algo {
-    private readonly fun: FunctionTree.Node;
+    private readonly funs: FunctionTree.Node[];
     private readonly tree: Map<FunctionTree.Node, number>;
     private readonly graph: AD.ExpressionElement[];
     private index: number;
 
-    constructor(fun: FunctionTree.Node) {
-        this.fun = fun;
+    constructor(funs: FunctionTree.Node[]) {
+        this.funs = funs;
         this.index = 0;
         this.tree = new Map();
         this.graph = [];
@@ -96,7 +96,12 @@ export class Algo {
     }
 
     private *init(): Generator<AlgoUpdate> {
-        for (const [level, _] of this.fun.arrangeByDepth(0)) {
+        // fixme sort
+        // const graph = [...this.fun.arrangeByDepth(0).entries()].sort(([k1, _], [k2, __]) => k2 - k1)
+        //     .flatMap(([k, vs]) => vs.map<[FunctionTree.Node, number]>((e) => [e, k]));
+        const graph: [FunctionTree.Node, number][] = this.funs.map<[FunctionTree.Node, number]>((e) => [e, -1]);
+
+        for (const [level, _] of graph) {
             this.tree.set(level, this.index);
 
             if (level instanceof FunctionTree.Const) {
@@ -138,7 +143,7 @@ export class Algo {
                     df: undefined,
                 };
             } else if (level instanceof FunctionTree.Tanh) {
-                let children = this.tree.get(level.operands)!;
+                let children = level.operands.map((o) => this.tree.get(o)!)[0];
                 this.graph.push(new AD.Tanh(children))
                 yield {
                     index: this.index,

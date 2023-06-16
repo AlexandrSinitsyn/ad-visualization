@@ -12,11 +12,13 @@ export abstract class Node {
 
 export class ErrorNode extends Node {
     public readonly content: string;
+    public readonly message: string;
     public readonly children: Node[];
 
-    public constructor(content: string, children: Node[]) {
+    public constructor(content: string, message: string, children: Node[]) {
         super();
         this.content = content;
+        this.message = message;
         this.children = children;
     }
 
