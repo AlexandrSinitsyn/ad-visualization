@@ -46,8 +46,6 @@ function parseToTree<Tree>(
     parser.feed(input);
     const result = parser.results;
 
-    console.log('>>>>>', result)
-
     if (result.length === 0) {
         throw new ParserError("Input matches nothing");
     }

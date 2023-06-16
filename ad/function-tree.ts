@@ -103,8 +103,8 @@ export namespace FunctionTree {
             super("/", OperationType.INFIX, args);
         }
 
-        protected toTexImpl(a: string, b: string): string {
-            return `\\dfrac{${a}}{${b}}`;
+        protected toTexImpl(...args: string[]): string {
+            return args.reduce((t, c) => `\\dfrac{${t}}{${c}}`);
         }
     }
     export class Tanh extends Operation {
@@ -128,7 +128,7 @@ export namespace FunctionTree {
         }
 
         protected toTexImpl(children: string): string {
-            return `{\\color{red} ${this.content}}\\left(${this.operands.join(", ")}\\right)`;
+            return `{\\color{red}${this.content}}\\left(${this.operands.map((e) => e.toTex()).join(", ")}\\right)`;
         }
     }
 }
