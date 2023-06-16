@@ -1,4 +1,8 @@
+import {MO} from "./algo";
+
 export namespace FunctionTree {
+    import Matrix = MO.Matrix;
+
     export interface Node {
         arrangeByDepth(depth: number): [Node, number][];
         toString(): string;
@@ -29,10 +33,12 @@ export namespace FunctionTree {
     }
     export class Variable extends Element {
         public readonly name: string;
+        public readonly value: Matrix
 
-        public constructor(name: string) {
+        public constructor(name: string, value: Matrix) {
             super();
             this.name = name;
+            this.value = value
         }
 
         public toString(): string {
@@ -40,7 +46,7 @@ export namespace FunctionTree {
         }
     }
 
-    abstract class Operation<Children extends Node | Node[]> implements Node {
+    export abstract class Operation<Children extends Node | Node[]> implements Node {
         readonly symbol: string;
         public readonly operands: Children;
 

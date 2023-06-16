@@ -1,71 +1,183 @@
-import { FunctionTree } from "./function-tree.js";
+import {FunctionTree} from "./function-tree";
+import Matrix = MO.Matrix;
+import Var = AD.Var;
+
+export namespace MO {
+    export type Matrix = number[][];
+
+    export function add(a: Matrix, b: Matrix): Matrix {
+        return indexedApplyByTemplate(a, (i, j) => a[i][j] + b[i][j]);
+    }
+
+    export function adamar(a: Matrix, b: Matrix): Matrix {
+        return indexedApplyByTemplate(a, (i, j) => a[i][j] * b[i][j]);
+    }
+
+    export function apply(a: Matrix, f: (_: number) => number): Matrix {
+        return indexedApplyByTemplate(a, (i, j) => f(a[i][j]));
+    }
+
+    export function mul(a: Matrix, b: Matrix): Matrix {
+        const l = a.length;
+        const m = b.length;
+        const n = b[0].length;
+        const res = genMatrix(l, n)
+        for (let i = 0; i < l; i++) {
+            for (let j = 0; j < n; j++) {
+                for (let k = 0; k < m; k++) {
+                    res[i][j] += a[i][k] * b[k][j];
+                }
+            }
+        }
+        return res;
+    }
+
+    export function transpose(a: Matrix): Matrix {
+        const r = a.length;
+        const c = a[0].length;
+        return indexedApply(c, r, (i, j) => a[j][i]);
+    }
+
+    export function genMatrix(r: number, c: number): Matrix {
+        const res: Matrix = [];
+        for (let i = 0; i < r; i++) {
+            res[i] = [];
+            for (let j = 0; j < c; j++) {
+                res[i][j] = 0.0;
+            }
+        }
+        return res;
+    }
+
+    function indexedApplyByTemplate(a: Matrix, f: (r_ind: number, c_ind: number) => number): Matrix {
+        return indexedApply(a.length, a[0].length, f);
+    }
+
+    function indexedApply(r: number, c: number, f: (r_ind: number, c_ind: number) => number): Matrix {
+        const res = genMatrix(r, c)
+        for (let i = 0; i < r; i++) {
+            for (let j = 0; j < c; j++) {
+                res[i][j] = f(i, j);
+            }
+        }
+        return res;
+    }
+}
 
 export namespace AD {
-    export abstract class ExpressionElement {
-        public value: number;
-        public df: number;
-        public initialized: boolean;
+    import Matrix = MO.Matrix
+    import genMatrix = MO.genMatrix;
+    import add = MO.add;
+    import apply = MO.apply;
+    import adamar = MO.adamar;
+    import mul = MO.mul;
+    import transpose = MO.transpose;
 
-        public constructor(value: number) {
-            this.value = value;
-            this.df = 0;
-            this.initialized = false;
+    export abstract class ExpressionElement {
+        public value!: Matrix;
+        public df!: Matrix;
+
+        public calcInitDf() {
+            this.value = this.calc();
+            this.df = genMatrix(this.value.length, this.value[0].length)
         }
 
-        toString(): string {
+        protected abstract calc(): Matrix;
+
+        public toString(): string {
             return `${this.constructor.name}(${this.value}, ${this.df})`;
         }
     }
 
-    export class Const extends ExpressionElement {}
     export class Var extends ExpressionElement {
-        constructor() {
-            super(0);
+        private readonly val: Matrix;
+
+        constructor(value: Matrix) {
+            super();
+            this.val = value;
+        }
+
+        calc(): Matrix {
+            return this.val;
         }
     }
 
-    abstract class OperationNode<Children> extends ExpressionElement {
+    export abstract class OperationNode<Children> extends ExpressionElement {
         public children: Children;
 
-        public constructor(children: Children) {
-            super(0);
+        protected constructor(children: Children) {
+            super();
             this.children = children;
         }
 
-        public abstract calc(children: Children): void;
-
-        public abstract diff(children: Map<number, number>, child: number, de: number): number;
+        public abstract diffProp(): void;
     }
 
-    export class Add extends OperationNode<number[]> {
-        calc(children: number[]) {
-            this.value = children.reduce((a, b) => a + b);
+    export class Tanh extends OperationNode<ExpressionElement> {
+        private child: ExpressionElement;
+
+        public constructor(child: ExpressionElement) {
+            super(child);
+            this.child = child
         }
 
-        diff(children: Map<number, number>, child: number, de: number): number {
-            this.df = de;
-            return de;
-        }
-    }
-
-    export class Div extends OperationNode<number[]> {
-        calc(children: number[]) {
-            this.value = children.reduce((a, b) => a / b);
+        calc(): Matrix {
+            return apply(this.child.value, Math.tanh);
         }
 
-        diff(children: Map<number, number>, child: number, de: number): number {
-            this.df = de;
-            return - de / (this.value * this.value);
+        diffProp() {
+            this.child.df = add(this.child.df, adamar(this.df, apply(this.value, x => 1 - x ** 2)))
         }
     }
 
-    export class Tanh extends OperationNode<number> {
-        calc(child: number) {
-            this.value = Math.tanh(child);
+    export class Add extends OperationNode<ExpressionElement[]> {
+        public constructor(children: ExpressionElement[]) {
+            super(children);
         }
 
-        diff(children: Map<number, number>, child: number, de: number): number {
-            return (1 - this.value * this.value) * de;
+        calc(): Matrix {
+            return this.children.map(x => x.df).reduce((a, b) => add(a, b));
+        }
+
+        diffProp() {
+            this.children.forEach(x => x.df = add(x.df, this.df));
+        }
+    }
+
+    export class Adamar extends OperationNode<ExpressionElement[]> {
+        public constructor(children: ExpressionElement[]) {
+            super(children);
+        }
+
+        calc(): Matrix {
+            return this.reduceAdamar(this.children.map(x => x.value));
+        }
+
+        private reduceAdamar(ms: Matrix[]): Matrix {
+            return ms.reduce((a, b) => adamar(a, b))
+        }
+
+        diffProp() {
+            for (const child of this.children) {
+                const ms = this.children.filter(x => x != child).map(x => x.value)
+                ms.push(this.df)
+                child.df = add(child.df, this.reduceAdamar(ms));
+            }
+        }
+    }
+
+    export class Mul extends OperationNode<[ExpressionElement, ExpressionElement]> {
+        public constructor(children: [ExpressionElement, ExpressionElement]) {
+            super(children);
+        }
+
+        calc(): Matrix {
+            return mul(this.children[0].value, this.children[1].value)
+        }
+
+        diffProp() {
+            this.children[0].df = add(this.children[0].df, mul(this.df, transpose(this.children[1].value)))
+            this.children[1].df = add(this.children[1].df, mul(transpose(this.children[0].value), this.df))
         }
     }
 }
@@ -74,21 +186,31 @@ export interface AlgoUpdate {
     index: number;
     name: string;
     children: number[];
-    value: number | undefined;
-    df: number | undefined;
+    value: Matrix;
+    df: Matrix;
+}
+
+export class UpdateInfo {
+    name: string;
+    children: number[];
+
+    constructor(name: string, children: number[]) {
+        this.name = name;
+        this.children = children;
+    }
 }
 
 export class Algo {
     private readonly fun: FunctionTree.Node;
-    private readonly tree: Map<FunctionTree.Node, number>;
-    private readonly graph: AD.ExpressionElement[];
-    private index: number;
+    private readonly nodeToId: Map<FunctionTree.Node, number>;
+    private readonly infos: UpdateInfo[];
+    private readonly tokens: (Var | AD.OperationNode<any>)[];
 
     constructor(fun: FunctionTree.Node) {
         this.fun = fun;
-        this.index = 0;
-        this.tree = new Map();
-        this.graph = [];
+        this.nodeToId = new Map();
+        this.infos = [];
+        this.tokens = [];
     }
 
     public *step(): Generator<AlgoUpdate> {
@@ -96,60 +218,54 @@ export class Algo {
     }
 
     private *init(): Generator<AlgoUpdate> {
-        for (const [level, _] of this.fun.arrangeByDepth(0)) {
-            this.tree.set(level, this.index);
-
-            if (level instanceof FunctionTree.Const) {
-                this.graph.push(new AD.Const(level.value));
-                yield {
-                    index: this.index,
-                    name: "Const",
-                    children: [],
-                    value: level.value,
-                    df: undefined,
-                };
-            } else if (level instanceof FunctionTree.Variable) {
-                this.graph.push(new AD.Var());
-                yield {
-                    index: this.index,
-                    name: level.name,
-                    children: [],
-                    value: undefined,
-                    df: undefined,
-                };
-            } else if (level instanceof FunctionTree.Add) {
-                let children = level.operands.map((o) => this.tree.get(o)!);
-                this.graph.push(new AD.Add(children))
-                yield {
-                    index: this.index,
-                    name: level.symbol,
-                    children: children,
-                    value: undefined,
-                    df: undefined,
-                };
-            } else if (level instanceof FunctionTree.Div) {
-                let children = level.operands.map((o) => this.tree.get(o)!);
-                this.graph.push(new AD.Div(children))
-                yield {
-                    index: this.index,
-                    name: level.symbol,
-                    children: children,
-                    value: undefined,
-                    df: undefined,
-                };
-            } else if (level instanceof FunctionTree.Tanh) {
-                let children = this.tree.get(level.operands)!;
-                this.graph.push(new AD.Tanh(children))
-                yield {
-                    index: this.index,
-                    name: level.symbol,
-                    children: [children],
-                    value: undefined,
-                    df: undefined,
-                };
+        let index = 0;
+        for (const [level] of this.fun.arrangeByDepth(0)) {
+            let children: number[];
+            let name: string;
+            let element: Var | AD.OperationNode<any>;
+            if (level instanceof FunctionTree.Variable) {
+                name = level.name
+                children = []
+                element = new AD.Var(level.value);
+            } if (level instanceof FunctionTree.Operation) {
+                name = level.symbol
+                if (level instanceof FunctionTree.Add) {
+                    children = level.operands.map((o) => this.nodeToId.get(o)!);
+                    element = new AD.Add(children.map(i => this.tokens[i]));
+                } else if (level instanceof FunctionTree.Tanh) {
+                    children = [this.nodeToId.get(level.operands)!];
+                    element = new AD.Tanh(this.tokens[children[0]]);
+                }
             }
-
-            this.index++;
+            this.infos.push(new UpdateInfo(name!!, children!!));
+            this.tokens.push(element!!);
+            this.nodeToId.set(level, index++);
+        }
+        for (let i = 0; i < this.tokens.length; i++) {
+            let element = this.tokens[i]
+            element.calcInitDf();
+            let info = this.infos[i]
+            yield {
+                index: i,
+                name: info.name,
+                children: info.children,
+                value: element.value,
+                df: element.df,
+            };
+        }
+        for (let i = this.tokens.length - 1; i >= 0; i--) {
+            let element = this.tokens[i]
+            if (element instanceof AD.OperationNode) {
+                element.diffProp();
+            }
+            let info = this.infos[i]
+            yield {
+                index: i,
+                name: info.name,
+                children: info.children,
+                value: element.value,
+                df: element.df,
+            };
         }
     }
 }
