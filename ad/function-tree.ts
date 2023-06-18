@@ -47,7 +47,7 @@ export namespace FunctionTree {
         FUNCTION,
     }
 
-    abstract class Operation implements Node {
+    export abstract class Operation implements Node {
         public readonly symbol: string;
         public readonly type: OperationType;
         public readonly operands: Node[];

@@ -1,6 +1,5 @@
-import {FunctionTree} from "./function-tree";
+import { FunctionTree } from "./function-tree.js";
 import Matrix = MO.Matrix;
-import Var = AD.Var;
 
 export namespace MO {
     export type Matrix = number[][];
@@ -90,11 +89,12 @@ export namespace AD {
     }
 
     export class Var extends ExpressionElement {
-        private readonly val: Matrix;
+        readonly name: string;
+        val!: Matrix;
 
-        constructor(value: Matrix) {
+        public constructor(name: string) {
             super();
-            this.val = value;
+            this.name = name;
         }
 
         calc(): Matrix {
@@ -182,12 +182,14 @@ export namespace AD {
     }
 }
 
+import Var = AD.Var;
+
 export interface AlgoUpdate {
     index: number;
     name: string;
     children: number[];
-    value: Matrix;
-    df: Matrix;
+    value: Matrix | undefined;
+    df: Matrix | undefined;
 }
 
 export class UpdateInfo {
@@ -201,50 +203,81 @@ export class UpdateInfo {
 }
 
 export class Algo {
-    private readonly fun: FunctionTree.Node;
+    private readonly graph: FunctionTree.Node[];
     private readonly nodeToId: Map<FunctionTree.Node, number>;
     private readonly infos: UpdateInfo[];
     private readonly tokens: (Var | AD.OperationNode<any>)[];
+    private readonly vars: Map<string, Matrix>;
 
-    constructor(fun: FunctionTree.Node) {
-        this.fun = fun;
+    constructor(fun: FunctionTree.Node[]) {
+        this.graph = fun;
         this.nodeToId = new Map();
         this.infos = [];
         this.tokens = [];
+        this.vars = new Map();
     }
 
     public *step(): Generator<AlgoUpdate> {
         yield* this.init();
+
+        yield* this.calc();
+
+        yield* this.diff();
     }
 
     private *init(): Generator<AlgoUpdate> {
         let index = 0;
-        for (const [level] of this.fun.arrangeByDepth(0)) {
+        for (const level of this.graph) {
             let children: number[];
             let name: string;
             let element: Var | AD.OperationNode<any>;
             if (level instanceof FunctionTree.Variable) {
-                name = level.name
-                children = []
-                element = new AD.Var(level.value);
-            } if (level instanceof FunctionTree.Operation) {
-                name = level.symbol
+                name = level.name;
+                children = [];
+                element = new AD.Var(level.name);
+
+                if (!this.vars.has(element.name)) {
+                    alert(`Variable is [${element.name}] not assigned`);
+                    throw "UNASSIGNED";
+                }
+
+                element.val = this.vars.get(element.name)!;
+            } else if (level instanceof FunctionTree.Operation) {
+                name = level.symbol;
+                children = level.operands.map((o) => this.nodeToId.get(o)!);
+
                 if (level instanceof FunctionTree.Add) {
-                    children = level.operands.map((o) => this.nodeToId.get(o)!);
                     element = new AD.Add(children.map(i => this.tokens[i]));
                 } else if (level instanceof FunctionTree.Tanh) {
-                    children = [this.nodeToId.get(level.operands)!];
                     element = new AD.Tanh(this.tokens[children[0]]);
+                } else {
+                    throw new Error("unreachable");
                 }
+            } else {
+                throw new Error("unreachable");
             }
-            this.infos.push(new UpdateInfo(name!!, children!!));
-            this.tokens.push(element!!);
+
+            this.infos.push(new UpdateInfo(name, children));
+            this.tokens.push(element);
             this.nodeToId.set(level, index++);
+
+            yield {
+                index: index,
+                name: name,
+                children: children,
+                value: undefined,
+                df: undefined,
+            }
         }
+    }
+
+    private *calc(): Generator<AlgoUpdate> {
         for (let i = 0; i < this.tokens.length; i++) {
             let element = this.tokens[i]
+            let info = this.infos[i];
+
             element.calcInitDf();
-            let info = this.infos[i]
+
             yield {
                 index: i,
                 name: info.name,
@@ -253,6 +286,9 @@ export class Algo {
                 df: element.df,
             };
         }
+    }
+
+    private *diff(): Generator<AlgoUpdate> {
         for (let i = this.tokens.length - 1; i >= 0; i--) {
             let element = this.tokens[i]
             if (element instanceof AD.OperationNode) {
@@ -267,5 +303,9 @@ export class Algo {
                 df: element.df,
             };
         }
+    }
+
+    public acceptValue(name: string, v: Matrix) {
+        this.vars.set(name, v);
     }
 }

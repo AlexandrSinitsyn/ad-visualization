@@ -1,22 +1,28 @@
 import { FunctionTree } from "./function-tree.js";
-import { Algo, AlgoUpdate } from "./algo.js";
+import { Algo, AlgoUpdate, MO } from "./algo.js";
 // @ts-ignore <- fail warning. This lib is imported on index.html:19
 import * as d3 from "./d3";
 
 export namespace BrowserManager {
+    import Matrix = MO.Matrix;
+
     export class Player {
         private time: number;
         private frameTime: number;
+        private algoManager: Algo | undefined;
         // noinspection JSMismatchedCollectionQueryUpdate
         private algo: Generator<AlgoUpdate> | undefined;
         public finished: boolean;
         private graphManager: GraphManager;
+
+        private readonly inputVars: Map<string, Matrix>;
 
         constructor(graphManager: GraphManager, frameTime: number) {
             this.graphManager = graphManager;
             this.frameTime = frameTime;
             this.time = frameTime;
             this.finished = false;
+            this.inputVars = new Map();
         }
 
         public frame(dt: number) {
@@ -47,8 +53,17 @@ export namespace BrowserManager {
         }
 
         public updateFunction(fun: FunctionTree.Node[]): number {
-            this.algo = new Algo(fun).step();
+            this.algoManager = new Algo(fun);
+
+            this.inputVars.forEach((v, name) => this.algoManager?.acceptValue(name, v));
+
+            this.algo = this.algoManager.step();
             return this.graphManager.init(this.algo);
+        }
+
+        public updateVariable(name: string, v: Matrix) {
+            // this.algoManager?.acceptValue(name, v);
+            this.inputVars.set(name, v);
         }
     }
 
@@ -106,6 +121,10 @@ export namespace BrowserManager {
         public setFunction(graph: FunctionTree.Node[]): number {
             this.expr = graph;
             return this.player.updateFunction(graph);
+        }
+
+        public updateVariable(name: string, v: Matrix) {
+            this.player.updateVariable(name, v);
         }
 
         public speedup(v: Seconds) {

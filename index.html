@@ -143,7 +143,7 @@
 
             const $variables = $('.variables').find('.content');
 
-            function newVar(name) {
+            function newVar() {
                 const $new = $($variables.find('template').prop('content')).clone();
 
                 const $cell = $($new.find('template').prop('content'));
@@ -153,6 +153,21 @@
                 const getRowCount = () => $tbody.children().length;
                 const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
 
+                const $nameField = $new.find('.variable-name > .marker');
+
+                const genCell = () => {
+                    const $newCell = $cell.clone();
+                    const $inputField = $newCell.find('.table-item');
+
+                    $inputField.keyup(function () {
+                        const value = $inputField.val();
+
+                        browser.updateVariable($nameField.val()  , [[1, 2], [3, 4]]);
+                    });
+
+                    return $newCell;
+                };
+
                 const newRow = () => {
                     if (getRowCount() >= 4) {
                         notify('Number of rows is not supported to be greater than 4')
@@ -160,7 +175,7 @@
                     }
 
                     const $tr = $('<tr></tr>').appendTo($tbody);
-                    $tbody.children().first().children().each(() => $tr.append($cell.clone()));
+                    $tbody.children().first().children().each(() => $tr.append(genCell()));
                 };
                 const newCol = () => {
                     if (getColCount() >= 4) {
@@ -168,7 +183,7 @@
                         return;
                     }
 
-                    $tbody.children().each((_, c) => $(c).append($cell.clone()))
+                    $tbody.children().each((_, c) => $(c).append(genCell()))
                 };
 
                 // single cell
