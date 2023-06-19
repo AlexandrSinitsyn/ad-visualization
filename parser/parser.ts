@@ -133,6 +133,7 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
             (name) => new FunctionTree.Variable(name),
             new Map([
                 ['+', (...args) => new FunctionTree.Add(args)],
+                ['*', (...args) => new FunctionTree.Mul(args)],
                 ['/', (...args) => new FunctionTree.Div(args)],
                 ['tanh', (x) => new FunctionTree.Tanh(x)],
             ]),

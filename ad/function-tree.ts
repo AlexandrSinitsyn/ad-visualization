@@ -98,6 +98,15 @@ export namespace FunctionTree {
             super("+", OperationType.INFIX, args);
         }
     }
+    export class Mul extends Operation {
+        public constructor(args: Node[]) {
+            super("*", OperationType.INFIX, args);
+        }
+
+        protected toTexImpl(...args: string[]): string {
+            return args.reduce((t, c) => `${t} * ${c}`);
+        }
+    }
     export class Div extends Operation {
         public constructor(args: Node[]) {
             super("/", OperationType.INFIX, args);

@@ -37,7 +37,7 @@ class Matrix {
         return this.data[i][j];
     }
 
-    private isZero(): boolean {
+    public isZero(): boolean {
         return this instanceof ZeroMatrix;
     }
 
@@ -90,8 +90,9 @@ class AlgorithmError extends Error {}
 
 namespace GraphNodes {
     export abstract class Element {
-        public v: Matrix | undefined;
-        public df: Matrix | undefined;
+        // fixme
+        public v: Matrix | undefined = new ZeroMatrix();
+        public df: Matrix | undefined = new ZeroMatrix();
 
         public abstract eval(): void;
         public abstract diff(): void;
@@ -106,14 +107,14 @@ namespace GraphNodes {
         }
 
         eval(): void {
-            if (!this.v) {
+            if (this.v?.isZero() ?? true) {
                 this.v = new ZeroMatrix();
                 this.df = new ZeroMatrix();
 
                 throw new AlgorithmError(`Variable [${this.name}] is not assigned. It was interpreted as zero-matrix`)
             }
 
-            this.df = this.v.apply(() => 0);
+            this.df = this.v!.apply(() => 0);
         }
 
         diff(): void {}
@@ -225,11 +226,15 @@ export class Algorithm {
                     name = e.symbol;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
 
+                    const operands = e.operands.map((n) => this.mapping.get(n)![0]);
+
                     switch (e.constructor) {
                         case FunctionTree.Add:
-                            return new GraphNodes.Add(e.operands.map((n) => this.mapping.get(n)![0]));
+                            return new GraphNodes.Add(operands);
+                        case FunctionTree.Mul:
+                            return new GraphNodes.Mul(operands);
                         case FunctionTree.Tanh:
-                            return new GraphNodes.Tanh(e.operands.map((n) => this.mapping.get(n)![0]));
+                            return new GraphNodes.Tanh(operands);
                         default:
                             throw 'UNKNOWN OPERATION';
                     }

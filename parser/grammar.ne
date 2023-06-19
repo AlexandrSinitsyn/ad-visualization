@@ -68,12 +68,13 @@ expression -> %name _ "=" _ function {%
 %}
 
 function ->
-    component _ %infix _ function {% _(([left, op, right]) => new Operation(op, [left, right])) %}
+    component __ %infix __ function {% _(([left, op, right]) => new Operation(op, [left, right])) %}
   | component {% id %}
 
 
 component ->
     operand {% id %}
+  | "(" _ function _ ")" {% _(([, f, ]) => f) %}
   | %name _ "(" _ component _ ("," _ component _):* _ ")" {%
     _(([op, , first, rest, ]) => opOr(op, `Unknown function ${op}(...)`, first, ...rest.map((e: any) => e[1])))
 %}
@@ -82,4 +83,5 @@ operand ->
     %float {% _(([v]) => new Const(+v)) %}
   | %name {% _(([n]) => new Variable(n)) %}
 
-_ -> %ws:+ {% () => null %}
+_ -> %ws:* {% () => null %}
+__ -> %ws:+ {% () => null %}
