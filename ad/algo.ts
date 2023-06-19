@@ -1,96 +1,51 @@
 import { FunctionTree } from "./function-tree.js";
-import Matrix = MO.Matrix;
 
-export namespace MO {
-    export type Matrix = number[][];
+class Matrix {
+    private readonly data: number[][];
 
-    export function add(a: Matrix, b: Matrix): Matrix {
-        return indexedApplyByTemplate(a, (i, j) => a[i][j] + b[i][j]);
+    public constructor(data: number[][]) {
+        this.data = data;
     }
 
-    export function adamar(a: Matrix, b: Matrix): Matrix {
-        return indexedApplyByTemplate(a, (i, j) => a[i][j] * b[i][j]);
+    public size(): [number, number] {
+        return this.data.length === 0 ? [0, 0] : [this.data.length, this.data[0].length];
     }
 
-    export function apply(a: Matrix, f: (_: number) => number): Matrix {
-        return indexedApplyByTemplate(a, (i, j) => f(a[i][j]));
+    public apply(fn: (i: number, j: number, e: number) => number): Matrix {
+        return new Matrix(this.data.map((row, i) => row.map((e, j) => fn(i, j, e))));
     }
 
-    export function mul(a: Matrix, b: Matrix): Matrix {
-        const l = a.length;
-        const m = b.length;
-        const n = b[0].length;
-        const res = genMatrix(l, n)
-        for (let i = 0; i < l; i++) {
-            for (let j = 0; j < n; j++) {
-                for (let k = 0; k < m; k++) {
-                    res[i][j] += a[i][k] * b[k][j];
-                }
-            }
-        }
-        return res;
+    public add(other: Matrix): Matrix {
+        return this.apply((i, j, e) => e + other.data[i][j]);
     }
 
-    export function transpose(a: Matrix): Matrix {
-        const r = a.length;
-        const c = a[0].length;
-        return indexedApply(c, r, (i, j) => a[j][i]);
+    public mull(other: Matrix): Matrix {
+        const scalar = (a: number[], b: number[]) => a.reduce((t, c, i) => t + c * b[i], 0);
+
+        return this.apply((i, j, e) => scalar(this.data[i], other.data.map((row) => row[j])));
     }
 
-    export function genMatrix(r: number, c: number): Matrix {
-        const res: Matrix = [];
-        for (let i = 0; i < r; i++) {
-            res[i] = [];
-            for (let j = 0; j < c; j++) {
-                res[i][j] = 0.0;
-            }
-        }
-        return res;
-    }
-
-    function indexedApplyByTemplate(a: Matrix, f: (r_ind: number, c_ind: number) => number): Matrix {
-        return indexedApply(a.length, a[0].length, f);
-    }
-
-    function indexedApply(r: number, c: number, f: (r_ind: number, c_ind: number) => number): Matrix {
-        const res = genMatrix(r, c)
-        for (let i = 0; i < r; i++) {
-            for (let j = 0; j < c; j++) {
-                res[i][j] = f(i, j);
-            }
-        }
-        return res;
+    public transpose(): Matrix {
+        return this.apply((i, j, _) => this.data[j][i]);
     }
 }
 
-export namespace AD {
-    import Matrix = MO.Matrix
-    import genMatrix = MO.genMatrix;
-    import add = MO.add;
-    import apply = MO.apply;
-    import adamar = MO.adamar;
-    import mul = MO.mul;
-    import transpose = MO.transpose;
+export namespace GraphNodes {
+    export abstract class Element {
+        public v: Matrix | undefined;
+        public df: Matrix | undefined;
 
-    export abstract class ExpressionElement {
-        public value!: Matrix;
-        public df!: Matrix;
-
-        public calcInitDf() {
-            this.value = this.calc();
-            this.df = genMatrix(this.value.length, this.value[0].length)
+        public eval(): void {
+            this.v = this.calc();
+            this.df = this.v.apply(() => 0);
         }
-
         protected abstract calc(): Matrix;
 
-        public toString(): string {
-            return `${this.constructor.name}(${this.value}, ${this.df})`;
-        }
+        public abstract diff(): void;
     }
 
-    export class Var extends ExpressionElement {
-        readonly name: string;
-        val!: Matrix;
+    export class Var extends Element {
+        public readonly name: string;
 
         public constructor(name: string) {
             super();
@@ -98,126 +53,85 @@ export namespace AD {
         }
 
         calc(): Matrix {
-            return this.val;
+            if (!this.v) {
+                this.v = new Matrix([[0]]);
+                alert(`Variable [${this.name}] is not assigned. It was interpreted as [[0]]`)
+            }
+
+            return this.v;
         }
+
+        diff(): void {}
     }
 
-    export abstract class OperationNode<Children> extends ExpressionElement {
-        public children: Children;
+    export abstract class Operation extends Element {
+        protected readonly children: Element[];
 
-        protected constructor(children: Children) {
+        public constructor(children: Element[]) {
             super();
             this.children = children;
         }
-
-        public abstract diffProp(): void;
     }
-
-    export class Tanh extends OperationNode<ExpressionElement> {
-        private child: ExpressionElement;
-
-        public constructor(child: ExpressionElement) {
-            super(child);
-            this.child = child
-        }
-
+    export class Add extends Operation {
         calc(): Matrix {
-            return apply(this.child.value, Math.tanh);
+            return this.children.reduce((t, c) => t.add(c.v!), new Matrix([[0]]));
         }
 
-        diffProp() {
-            this.child.df = add(this.child.df, adamar(this.df, apply(this.value, x => 1 - x ** 2)))
+        diff(): void {
+            this.children.forEach((e) => e.df = this.df!);
         }
     }
-
-    export class Add extends OperationNode<ExpressionElement[]> {
-        public constructor(children: ExpressionElement[]) {
-            super(children);
-        }
-
+    export class Tanh extends Operation {
         calc(): Matrix {
-            return this.children.map(x => x.df).reduce((a, b) => add(a, b));
+            return this.children[0].v!.apply((i, j, e) => Math.tanh(e));
         }
 
-        diffProp() {
-            this.children.forEach(x => x.df = add(x.df, this.df));
+        diff(): void {
+            this.children[0].df = this.df!.apply((i, j, e) => 1 - e ** 2);
         }
     }
-
-    export class Adamar extends OperationNode<ExpressionElement[]> {
-        public constructor(children: ExpressionElement[]) {
-            super(children);
-        }
-
+    export class Mul extends Operation {
         calc(): Matrix {
-            return this.reduceAdamar(this.children.map(x => x.value));
+            const [a, b] = this.children;
+
+            return a.v!.mull(b.v!);
         }
 
-        private reduceAdamar(ms: Matrix[]): Matrix {
-            return ms.reduce((a, b) => adamar(a, b))
-        }
+        diff(): void {
+            const [a, b] = this.children;
 
-        diffProp() {
-            for (const child of this.children) {
-                const ms = this.children.filter(x => x != child).map(x => x.value)
-                ms.push(this.df)
-                child.df = add(child.df, this.reduceAdamar(ms));
-            }
-        }
-    }
-
-    export class Mul extends OperationNode<[ExpressionElement, ExpressionElement]> {
-        public constructor(children: [ExpressionElement, ExpressionElement]) {
-            super(children);
-        }
-
-        calc(): Matrix {
-            return mul(this.children[0].value, this.children[1].value)
-        }
-
-        diffProp() {
-            this.children[0].df = add(this.children[0].df, mul(this.df, transpose(this.children[1].value)))
-            this.children[1].df = add(this.children[1].df, mul(transpose(this.children[0].value), this.df))
+            a.df = this.df!.mull(b.df!.transpose());
+            b.df = a.df!.transpose().mull(this.df!);
         }
     }
 }
 
-import Var = AD.Var;
-
-export interface AlgoUpdate {
+export interface Update {
     index: number;
     name: string;
     children: number[];
-    value: Matrix | undefined;
+    v: Matrix | undefined;
     df: Matrix | undefined;
 }
 
-export class UpdateInfo {
+interface Info {
+    index: number;
     name: string;
     children: number[];
-
-    constructor(name: string, children: number[]) {
-        this.name = name;
-        this.children = children;
-    }
 }
 
-export class Algo {
+export class Algorithm {
     private readonly graph: FunctionTree.Node[];
-    private readonly nodeToId: Map<FunctionTree.Node, number>;
-    private readonly infos: UpdateInfo[];
-    private readonly tokens: (Var | AD.OperationNode<any>)[];
-    private readonly vars: Map<string, Matrix>;
+    private readonly mapping: Map<FunctionTree.Node, [GraphNodes.Element, Info]>;
+    private readonly vars: Map<string, GraphNodes.Var>;
 
-    constructor(fun: FunctionTree.Node[]) {
-        this.graph = fun;
-        this.nodeToId = new Map();
-        this.infos = [];
-        this.tokens = [];
+    public constructor(graph: FunctionTree.Node[]) {
+        this.graph = graph;
+        this.mapping = new Map();
         this.vars = new Map();
     }
 
-    public *step(): Generator<AlgoUpdate> {
+    public *step(): Generator<Update> {
         yield* this.init();
 
         yield* this.calc();
@@ -225,87 +139,82 @@ export class Algo {
         yield* this.diff();
     }
 
-    private *init(): Generator<AlgoUpdate> {
+    private *init(): Generator<Update> {
         let index = 0;
-        for (const level of this.graph) {
-            let children: number[];
+
+        for (const e of this.graph) {
             let name: string;
-            let element: Var | AD.OperationNode<any>;
-            if (level instanceof FunctionTree.Variable) {
-                name = level.name;
-                children = [];
-                element = new AD.Var(level.name);
+            let children: number[];
 
-                if (!this.vars.has(element.name)) {
-                    alert(`Variable is [${element.name}] not assigned`);
-                    throw "UNASSIGNED";
-                }
+            const vertex: GraphNodes.Element = (() => {
+                if (e instanceof FunctionTree.Variable) {
+                    name = e.name;
+                    children = [];
+                    return new GraphNodes.Var(e.name);
+                } else if (e instanceof FunctionTree.Operation) {
+                    name = e.symbol;
+                    children = e.operands.map((n) => this.mapping.get(n)![1].index);
 
-                element.val = this.vars.get(element.name)!;
-            } else if (level instanceof FunctionTree.Operation) {
-                name = level.symbol;
-                children = level.operands.map((o) => this.nodeToId.get(o)!);
-
-                if (level instanceof FunctionTree.Add) {
-                    element = new AD.Add(children.map(i => this.tokens[i]));
-                } else if (level instanceof FunctionTree.Tanh) {
-                    element = new AD.Tanh(this.tokens[children[0]]);
+                    switch (e.constructor) {
+                        case FunctionTree.Add:
+                            return new GraphNodes.Add(e.operands.map((n) => this.mapping.get(n)![0]));
+                        case FunctionTree.Tanh:
+                            return new GraphNodes.Tanh(e.operands.map((n) => this.mapping.get(n)![0]));
+                        default:
+                            throw 'UNKNOWN OPERATION';
+                    }
                 } else {
-                    throw new Error("unreachable");
+                    throw 'UNSUPPORTED NODE TYPE';
                 }
-            } else {
-                throw new Error("unreachable");
-            }
-
-            this.infos.push(new UpdateInfo(name, children));
-            this.tokens.push(element);
-            this.nodeToId.set(level, index++);
+            })();
 
             yield {
                 index: index,
                 name: name,
                 children: children,
-                value: undefined,
-                df: undefined,
+                v: vertex.v,
+                df: vertex.df,
+            };
+
+            this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
+
+            index++;
+        }
+    }
+
+    private *calc(): Generator<Update> {
+        for (const [e, {name, index, children}] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
+            e.eval();
+
+            yield {
+                index: index,
+                name: name,
+                children: children,
+                v: e.v,
+                df: e.df,
             }
         }
     }
 
-    private *calc(): Generator<AlgoUpdate> {
-        for (let i = 0; i < this.tokens.length; i++) {
-            let element = this.tokens[i]
-            let info = this.infos[i];
-
-            element.calcInitDf();
+    private *diff(): Generator<Update> {
+        for (const [e, {name, index, children}] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1).reverse()) {
+            e.diff();
 
             yield {
-                index: i,
-                name: info.name,
-                children: info.children,
-                value: element.value,
-                df: element.df,
-            };
-        }
-    }
-
-    private *diff(): Generator<AlgoUpdate> {
-        for (let i = this.tokens.length - 1; i >= 0; i--) {
-            let element = this.tokens[i]
-            if (element instanceof AD.OperationNode) {
-                element.diffProp();
+                index: index,
+                name: name,
+                children: children,
+                v: e.v,
+                df: e.df,
             }
-            let info = this.infos[i]
-            yield {
-                index: i,
-                name: info.name,
-                children: info.children,
-                value: element.value,
-                df: element.df,
-            };
         }
     }
 
-    public acceptValue(name: string, v: Matrix) {
-        this.vars.set(name, v);
+    public acceptValue(name: string, v: number[][]) {
+        if (!this.vars.has(name)) {
+            throw `UNKNOWN VARIABLE "${name}"=${v}`;
+        }
+
+        this.vars.get(name)!.v = new Matrix(v);
     }
 }
