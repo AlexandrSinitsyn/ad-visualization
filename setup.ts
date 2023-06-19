@@ -203,5 +203,11 @@ $(document).ready(function () {
     const $player = $('#player');
     $player.mouseup(() => browser.moveTo(int($player)));
 
-    browser.bindPlayer((frame) => $player.val(frame));
+    browser.bindPlayer((frame, result) => {
+        $player.val(frame);
+
+        if (result !== true) {
+            notify(result);
+        }
+    });
 });

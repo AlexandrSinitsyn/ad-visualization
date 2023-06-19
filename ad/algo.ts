@@ -11,36 +11,89 @@ class Matrix {
         return this.data.length === 0 ? [0, 0] : [this.data.length, this.data[0].length];
     }
 
+    public row(i: number): number[] {
+        if (i >= this.size()[0]) {
+            throw new AlgorithmError(`Invalid matrix size. Matrix is ${this.size()}, but was expected "row(${i})"`);
+        }
+
+        return this.data[i];
+    }
+
+    public col(j: number): number[] {
+        if (j >= this.size()[1]) {
+            throw new AlgorithmError(`Invalid matrix size. Matrix is ${this.size()}, but was expected "col(${j})"`);
+        }
+
+        return this.data.map((row) => row[j]);
+    }
+
+    public get(i: number, j: number): number {
+        const [h, w] = this.size();
+
+        if (i >= h || j >= w) {
+            throw new AlgorithmError(`Invalid matrix size. Matrix is ${this.size()}, but was expected "get(${i}, ${j})"`);
+        }
+
+        return this.data[i][j];
+    }
+
+    private isZero(): boolean {
+        return this instanceof ZeroMatrix;
+    }
+
     public apply(fn: (i: number, j: number, e: number) => number): Matrix {
+        if (this.isZero()) {
+            return new ZeroMatrix();
+        }
+
         return new Matrix(this.data.map((row, i) => row.map((e, j) => fn(i, j, e))));
     }
 
     public add(other: Matrix): Matrix {
-        return this.apply((i, j, e) => e + other.data[i][j]);
+        if (other.isZero()) {
+            return new ZeroMatrix();
+        }
+
+        return this.apply((i, j, e) => e + other.get(i, j));
     }
 
     public mull(other: Matrix): Matrix {
+        if (other.isZero()) {
+            return new ZeroMatrix();
+        }
+
         const scalar = (a: number[], b: number[]) => a.reduce((t, c, i) => t + c * b[i], 0);
 
-        return this.apply((i, j, e) => scalar(this.data[i], other.data.map((row) => row[j])));
+        return this.apply((i, j, e) => scalar(this.row(i), other.col(j)));
     }
 
     public transpose(): Matrix {
-        return this.apply((i, j, _) => this.data[j][i]);
+        return this.apply((i, j, _) => this.get(j, i));
+    }
+
+    public toString(): string {
+        return this.data.map((row) => row.join(' ')).join('\n');
     }
 }
 
-export namespace GraphNodes {
+class ZeroMatrix extends Matrix {
+    public constructor() {
+        super([[]]);
+    }
+
+    toString(): string {
+        return '0';
+    }
+}
+
+class AlgorithmError extends Error {}
+
+namespace GraphNodes {
     export abstract class Element {
         public v: Matrix | undefined;
         public df: Matrix | undefined;
 
-        public eval(): void {
-            this.v = this.calc();
-            this.df = this.v.apply(() => 0);
-        }
-        protected abstract calc(): Matrix;
-
+        public abstract eval(): void;
         public abstract diff(): void;
     }
 
@@ -52,13 +105,15 @@ export namespace GraphNodes {
             this.name = name;
         }
 
-        calc(): Matrix {
+        eval(): void {
             if (!this.v) {
-                this.v = new Matrix([[0]]);
-                alert(`Variable [${this.name}] is not assigned. It was interpreted as [[0]]`)
+                this.v = new ZeroMatrix();
+                this.df = new ZeroMatrix();
+
+                throw new AlgorithmError(`Variable [${this.name}] is not assigned. It was interpreted as zero-matrix`)
             }
 
-            return this.v;
+            this.df = this.v.apply(() => 0);
         }
 
         diff(): void {}
@@ -71,10 +126,16 @@ export namespace GraphNodes {
             super();
             this.children = children;
         }
+
+        public eval(): void {
+            this.v = this.calc();
+            this.df = this.v.apply(() => 0);
+        }
+        protected abstract calc(): Matrix;
     }
     export class Add extends Operation {
         calc(): Matrix {
-            return this.children.reduce((t, c) => t.add(c.v!), new Matrix([[0]]));
+            return this.children.map((e) => e.v!).reduce((t, c) => t.add(c));
         }
 
         diff(): void {
@@ -114,6 +175,9 @@ export interface Update {
     df: Matrix | undefined;
 }
 
+export type ErrorStep = string;
+export type Step = Update | ErrorStep;
+
 interface Info {
     index: number;
     name: string;
@@ -123,15 +187,15 @@ interface Info {
 export class Algorithm {
     private readonly graph: FunctionTree.Node[];
     private readonly mapping: Map<FunctionTree.Node, [GraphNodes.Element, Info]>;
-    private readonly vars: Map<string, GraphNodes.Var>;
+    private readonly vars: Map<string, number[][]>;
 
-    public constructor(graph: FunctionTree.Node[]) {
+    public constructor(graph: FunctionTree.Node[], vars: Map<string, number[][]>) {
         this.graph = graph;
         this.mapping = new Map();
-        this.vars = new Map();
+        this.vars = vars;
     }
 
-    public *step(): Generator<Update> {
+    public *step(): Generator<Step> {
         yield* this.init();
 
         yield* this.calc();
@@ -139,7 +203,7 @@ export class Algorithm {
         yield* this.diff();
     }
 
-    private *init(): Generator<Update> {
+    private *init(): Generator<Step> {
         let index = 0;
 
         for (const e of this.graph) {
@@ -150,7 +214,13 @@ export class Algorithm {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
                     children = [];
-                    return new GraphNodes.Var(e.name);
+                    const variable = new GraphNodes.Var(e.name);
+
+                    if (this.vars.has(name)) {
+                        variable.v = new Matrix(this.vars.get(name)!);
+                    }
+
+                    return variable;
                 } else if (e instanceof FunctionTree.Operation) {
                     name = e.symbol;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
@@ -168,13 +238,7 @@ export class Algorithm {
                 }
             })();
 
-            yield {
-                index: index,
-                name: name,
-                children: children,
-                v: vertex.v,
-                df: vertex.df,
-            };
+            yield Algorithm.nodeToUpdate(vertex, {name, index, children});
 
             this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
 
@@ -182,39 +246,49 @@ export class Algorithm {
         }
     }
 
-    private *calc(): Generator<Update> {
-        for (const [e, {name, index, children}] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
-            e.eval();
+    private *calc(): Generator<Step> {
+        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
+            try {
+                e.eval();
 
-            yield {
-                index: index,
-                name: name,
-                children: children,
-                v: e.v,
-                df: e.df,
+                yield Algorithm.nodeToUpdate(e, info);
+            } catch (ex: any) {
+                if (ex instanceof AlgorithmError) {
+                    yield ex.message;
+                } else {
+                    throw ex;
+                }
             }
         }
     }
 
-    private *diff(): Generator<Update> {
-        for (const [e, {name, index, children}] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1).reverse()) {
-            e.diff();
+    private *diff(): Generator<Step> {
+        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1).reverse()) {
+            try {
+                e.diff();
 
-            yield {
-                index: index,
-                name: name,
-                children: children,
-                v: e.v,
-                df: e.df,
+                yield Algorithm.nodeToUpdate(e, info);
+            } catch (ex: any) {
+                if (ex instanceof AlgorithmError) {
+                    yield ex.message;
+                } else {
+                    throw ex;
+                }
             }
         }
     }
 
-    public acceptValue(name: string, v: number[][]) {
-        if (!this.vars.has(name)) {
-            throw `UNKNOWN VARIABLE "${name}"=${v}`;
-        }
+    private static nodeToUpdate(e: GraphNodes.Element, {name, index, children}: Info): Update {
+        return {
+            index: index,
+            name: name,
+            children: children,
+            v: e.v,
+            df: e.df,
+        };
+    }
 
-        this.vars.get(name)!.v = new Matrix(v);
+    public updateAlgo(newVars: Map<string, number[][]>): Algorithm {
+        return new Algorithm(this.graph, newVars);
     }
 }

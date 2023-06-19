@@ -1,4 +1,4 @@
-import { Algorithm, Update } from "./algo.js";
+import { Algorithm, Step, Update, ErrorStep } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 
 export type Millis = number;
@@ -7,12 +7,12 @@ export type Frame = number;
 class Player {
     private time: Millis;
     private frameTime: Millis;
-    private onUpdate: (frame: Frame) => void;
+    private readonly onUpdate: (frame: Frame) => boolean;
     private index: Frame;
     private readonly last: Frame;
     public finished: boolean;
 
-    public constructor(frameTime: Millis, frameNumber: Frame, onUpdate: (frame: Frame) => void) {
+    public constructor(frameTime: Millis, frameNumber: Frame, onUpdate: (frame: Frame) => boolean) {
         this.frameTime = frameTime;
         this.time = frameTime;
         this.onUpdate = onUpdate;
@@ -33,7 +33,11 @@ class Player {
 
             this.index++;
 
-            this.onUpdate(this.index);
+            const ok = this.onUpdate(this.index);
+
+            if (!ok) {
+                this.index--;
+            }
 
             this.time = this.frameTime;
         }
@@ -54,15 +58,21 @@ class Player {
     }
 }
 
-class GraphManager {
+class ExpressionManager {
     private algo: Algorithm;
-    private readonly updates: Update[];
+    private readonly updates: Step[];
 
     constructor(algorithm: Algorithm) {
         this.algo = algorithm;
         this.updates = [];
 
-        const steps = algorithm.step();
+        this.init();
+    }
+
+    private init(): void {
+        this.updates.length = 0;
+
+        const steps = this.algo.step();
 
         while (true) {
             const nxt = steps.next();
@@ -79,14 +89,25 @@ class GraphManager {
         return this.updates.length;
     }
 
-    public acceptValue(name: string, v: number[][]) {
-        this.algo.acceptValue(name, v);
+    public updateAlgorithm(vars: Map<string, number[][]>) {
+        this.algo = this.algo.updateAlgo(vars);
+
+        this.init();
+    }
+
+    // fixme
+    public errorsFound(frame: Frame): ErrorStep | undefined {
+        const errors = this.updates.slice(0, frame).filter((e) => typeof e === "string").map((e) => e as string);
+
+        return errors.length === 0 ? undefined : errors[0];
     }
 
     private apply(frame: Frame): Update[] {
         const res: Update[] = [];
 
-        for (const u of this.updates.slice(0, frame)) {
+        for (const step of this.updates.slice(0, frame)) {
+            const u = step as Update;
+
             const prev = res.find((e) => e.index === u.index);
 
             if (!prev) {
@@ -121,7 +142,7 @@ class GraphManager {
 
 class GraphDrawer {
     private static graphviz: any;
-    private graph: GraphManager | undefined;
+    private expression: ExpressionManager | undefined;
     private isAnimated: boolean;
 
     public constructor(elementId: string) {
@@ -140,27 +161,35 @@ class GraphDrawer {
     }
 
     public setFunction(algo: Algorithm) {
-        this.graph = new GraphManager(algo);
+        this.expression = new ExpressionManager(algo);
     }
 
-    public acceptValue(name: string, v: number[][]) {
-        this.graph?.acceptValue(name, v);
+    public updateAlgorithm(vars: Map<string, number[][]>) {
+        this.expression?.updateAlgorithm(vars);
     }
 
-    public moveTo(frame: Frame) {
-        this.render(frame);
+    public moveTo(frame: Frame): true | string {
+        return this.render(frame);
     }
 
     public get frameCount(): Frame {
-        return this.graph?.frameCount ?? 0;
+        return this.expression?.frameCount ?? 0;
     }
 
-    private render(frame: Frame) {
-        if (!this.graph) {
+    private render(frame: Frame): true | string {
+        if (!this.expression) {
             throw 'NO FUNCTION IS PROVIDED';
         }
 
-        GraphDrawer.graphviz.renderDot(this.graph.toString(frame));
+        const errors = this.expression.errorsFound(frame);
+
+        if (errors) {
+            return errors;
+        }
+
+        GraphDrawer.graphviz.renderDot(this.expression.toString(frame));
+
+        return true;
     }
 
     public speedup(frameTime: number) {
@@ -176,13 +205,17 @@ class GraphDrawer {
 
 export class BrowserManager {
     private player: Player | undefined;
-    private boundPlayer!: (frame: Frame) => void;
+    private boundPlayer!: (frame: Frame, result: true | string) => void;
     private graphDrawer: GraphDrawer;
     private isOn: boolean;
+
+    private readonly vars: Map<string, number[][]>;
 
     public constructor(elementId: string) {
         this.graphDrawer = new GraphDrawer(elementId);
         this.isOn = false;
+
+        this.vars = new Map();
     }
 
     private startTimer() {
@@ -236,21 +269,25 @@ export class BrowserManager {
     }
 
     public setFunction(graph: FunctionTree.Node[]) {
-        this.graphDrawer.setFunction(new Algorithm(graph));
+        this.graphDrawer.setFunction(new Algorithm(graph, this.vars));
 
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {
-            this.graphDrawer.moveTo(frame);
-            this.boundPlayer(frame);
+            const result = this.graphDrawer.moveTo(frame);
+            this.boundPlayer(frame, result);
+
+            return result === true;
         });
 
         return this.graphDrawer.frameCount;
     }
 
-    public bindPlayer(onUpdate: (frame: Frame) => void) {
+    public bindPlayer(onUpdate: (frame: Frame, result: true | string) => void) {
         this.boundPlayer = onUpdate;
     }
 
     public updateValue(name: string, v: number[][]) {
-        this.graphDrawer.acceptValue(name, v);
+        this.vars.set(name, v);
+
+        this.graphDrawer.updateAlgorithm(this.vars);
     }
 }
