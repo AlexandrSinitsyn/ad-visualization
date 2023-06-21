@@ -43,6 +43,11 @@
     <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/nearley@2.20.1/lib/nearley.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moo@0.5.2/moo.min.js"></script>
+    <script type="module" src="parser/grammar.js"></script>
+    <script type="module" src="parser/parser.js"></script>
+
     <!-- mathjax -->
 
     <script>
@@ -76,168 +81,7 @@
         });
     </script>
 
-    <script type="module">
-        import { FunctionTree } from "./ad/function-tree.js";
-        import { BrowserManager } from "./ad/browser-manager.js";
-
-        export const browser = new BrowserManager.ExpressionManager(new BrowserManager.GraphManager("graph"), 3);
-
-        console.log("Browser manager:", browser);
-
-        // fixme
-        function notify(message) {
-            alert(message);
-        }
-
-        // setup aside
-        $(document).ready(function () {
-            const elements = {
-                'play': ['play-fill', () => browser.resume()],
-                'step': ['file-play', () => browser.step()],
-                'pause': ['pause', () => browser.pause()],
-                'stop': ['stop-fill', () => browser.restart()],
-            };
-
-            const $aside = $('aside');
-
-            for (const [name, [clazz, callback]] of Object.entries(elements)) {
-                $aside.append(
-`<div id="action-${name}" class="${name} btn btn-outline-primary">
-    <span style="margin-right: 0.5rem">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
-    <i class="bi bi-${clazz}"></i>
-</div>`
-                );
-
-                $aside.find(`#action-${name}`).click(callback);
-            }
-
-            // switch animation
-            $aside.append(
-`<div id="action-remove-animation" class="remove-animation btn btn-outline-primary" style="
-    display: flex;
-    align-items: center;
-    justify-content: space-evenly;
-    flex-direction: row;
-">
-    <div class="bi">Disable</br>animation</div>
-    <i class="bi bi-film"></i>
-</div>`
-            );
-
-            $aside.find('#action-remove-animation').click(function () {
-                const now = browser.switchAnimation();
-
-                $(this).find('span').text(now ? 'Disable</br>animation' : 'Enable</br>branimation');
-            });
-        });
-
-        // setup variables-input
-        $(document).ready(function () {
-            let variables = 0;
-
-            const $variables = $('.variables').find('.content');
-
-            function newVar(name) {
-                const $new = $($variables.find('template').prop('content')).clone();
-
-                const $cell = $($new.find('template').prop('content'));
-
-                const $tbody = $new.find('tbody');
-
-                const getRowCount = () => $tbody.children().length;
-                const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
-
-                const newRow = () => {
-                    if (getRowCount() >= 4) {
-                        notify('Number of rows is not supported to be greater than 4')
-                        return;
-                    }
-
-                    const $tr = $('<tr></tr>').appendTo($tbody);
-                    $tbody.children().first().children().each(() => $tr.append($cell.clone()));
-                };
-                const newCol = () => {
-                    if (getColCount() >= 4) {
-                        notify('Number of columns is not supported to be greater than 4')
-                        return;
-                    }
-
-                    $tbody.children().each((_, c) => $(c).append($cell.clone()))
-                };
-
-                // single cell
-                newRow();
-                newCol();
-
-                $new.find('.expand-right').click(newCol);
-                $new.find('.expand-down').click(newRow);
-
-                $variables.append($new);
-
-                const $appender = $('.new-var').clone(true);
-                $('.new-var').remove();
-
-                if ($variables.children().length < 5) {
-                    $variables.append($appender);
-                }
-            }
-
-            // noinspection JSJQueryEfficiency
-            $('.new-var').click(() => newVar());
-        });
-
-        // export const parser = new ExpressionParser();
-
-        // LaTeX visualizer
-        $(document).ready(() => $('#function-input').keyup(function () {
-            const input = $("#function-input").text();
-
-            const expr = new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Variable("z"), new FunctionTree.Const(19)), new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Const(6)), new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(14)))), new FunctionTree.Const(87)), new FunctionTree.Add(new FunctionTree.Div(new FunctionTree.Tanh(new FunctionTree.Tanh(new FunctionTree.Const(25))), new FunctionTree.Tanh(new FunctionTree.Const(37))), new FunctionTree.Add(new FunctionTree.Tanh(new FunctionTree.Const(84)), new FunctionTree.Tanh(new FunctionTree.Variable("z"))))));
-            // new FunctionTree.Add(new FunctionTree.Const(4), new FunctionTree.Variable("x"));
-            // const expr = parser.parse(input);
-
-            // const $functionError = $("#function-error");
-            // if (expr.errorFound()) {
-            //     $functionError.text(expr.errorFound());
-            //     $functionError.show();
-            //     return;
-            // } else {
-            //     $functionError.hide();
-            // }
-
-
-            $('#function-show').text('\\[' + expr.toTex() + '\\]');
-
-            MathJax.typeset();
-
-            browser.setFunction(expr);
-
-            $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $('#player').height() + 'px - 2rem)');
-        }));
-
-        // Slider init
-        $(document).ready(() => {
-            // number of frames in one second
-            const available = [0.2, 0.5, 1, 2, 3, 4, 5, 10];
-
-            const $slider = $('#frametime');
-            $slider.attr('min', 0);
-            $slider.attr('max', available.length - 1);
-            $slider.attr('step', 1);
-
-            const $frametime = $('#frametime-show');
-            const onupdate = () => {
-                const v = available[$slider.val()];
-                $frametime.text(v < 1 ? `1/${1 / v} fps` : `${v}/1 fps`);
-                $frametime.attr('title', v < 1 ? `1 frames /${1 / v} sec` : `${v} frames / 1 ses`);
-
-                browser.speedup(1 / v);
-            };
-            onupdate();
-            $slider.change(onupdate);
-            $slider.mousemove(onupdate);
-        })
-    </script>
+    <script type="module" src="./setup.js"></script>
 
     <link rel="icon" href="static/img/ad.ico">
     <title>AD Visualization</title>
@@ -256,7 +100,8 @@
     <div class="sep2"></div>
     <div class="function">
         <label for="function-input" class="marker">Function</label>
-        <textarea id="function-input" class="form-control" placeholder="f(x) = x^2 + 2x + ..."></textarea>
+        <textarea id="function-input" class="form-control" placeholder="y = x^2
+f = y + 2 * x + ..."></textarea>
     </div>
     <div class="variables">
         <span class="marker">Variables</span>
@@ -268,11 +113,11 @@
                     </label>
                     <table class="input">
                         <template>
-                            <th>
+                            <td>
                                 <label>
                                     <input class="table-item" type="number" step="0.01">
                                 </label>
-                            </th>
+                            </td>
                         </template>
                         <tbody>
                         </tbody>
@@ -292,7 +137,7 @@
 <main>
     <div class="function-show">
         <div id="function-show">No function is provided</div>
-        <div id="function-error" hidden></div>
+        <div id="function-error" style="color: red" hidden></div>
     </div>
     <label for="player" style="width: 100%;">
         <input id="player" type="range" style="width: 100%" min="0" max="1" step="1" value="0"/>
