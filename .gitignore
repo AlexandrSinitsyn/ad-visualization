@@ -1,4 +1,11 @@
+### WebStorm ###
 .idea
-*.js
+
+### npm ###
 node_modules
-./parser/grammar.ts
+
+### Nearley.js ###
+parser/grammar.ts
+
+### Generated ###
+*.js
