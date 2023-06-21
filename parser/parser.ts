@@ -1,8 +1,8 @@
 import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
+import { ParserError } from "../util/errors.js";
+import { parserMapping, functions } from "../ad/operations.js";
 import grammar from "./grammar.js";
-
-class ParserError extends Error {}
 
 class ParserResult<Tree> {
     private readonly functions: Tree[] | undefined;
@@ -38,7 +38,7 @@ function parseToTree<Tree>(
     input: string,
     cnst: (v: number) => Tree,
     vrb: (name: string) => Tree,
-    ops: Map<string, (...args: Tree[]) => Tree>,
+    ops: Map<string, (args: Tree[]) => Tree>,
     onError: (content: string, message: string, args: Tree[]) => Tree
 ): [Tree[], Tree[]] {
     // @ts-ignore
@@ -57,12 +57,14 @@ function parseToTree<Tree>(
 
     const graph: Rule[] = result[0];
 
+    const isInfix = (op: string): boolean => functions.get(op) === FunctionTree.OperationType.INFIX;
+
     function compress(v: Node): Node {
         if (v instanceof Operation) {
             const op = v as Operation;
             const args = op.children.map(compress).flatMap((e) =>
                 e.constructor === Operation ?
-                    (e as Operation).name == op.name ? (e as Operation).children : [e] : [e])
+                    (e as Operation).name === op.name && isInfix(op.name) ? (e as Operation).children : [e] : [e])
 
             op.children.length = 0;
             op.children.push(...args);
@@ -98,7 +100,7 @@ function parseToTree<Tree>(
                             return onError(op.name, `Unknown operation ${op.name}(...)`, operands);
                         }
 
-                        return operation(...operands);
+                        return operation(operands);
                     case ErrorNode:
                         const err = v as ErrorNode;
 
@@ -131,12 +133,7 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
             input,
             (v) => new FunctionTree.Const(v),
             (name) => new FunctionTree.Variable(name),
-            new Map([
-                ['+', (...args) => new FunctionTree.Add(args)],
-                ['*', (...args) => new FunctionTree.Mul(args)],
-                ['/', (...args) => new FunctionTree.Div(args)],
-                ['tanh', (x) => new FunctionTree.Tanh(x)],
-            ]),
+            parserMapping,
             (content, message, children) => {
                 errors.push([content, message]);
                 return new FunctionTree.ErrorNode(content, message, children);

@@ -40,7 +40,7 @@ export namespace FunctionTree {
         }
     }
 
-    enum OperationType {
+    export enum OperationType {
         PREFIX,
         POSTFIX,
         INFIX,
@@ -91,38 +91,6 @@ export namespace FunctionTree {
 
         protected toTexImpl(...children: string[]): string {
             return this.toString().replace(' ', '~');
-        }
-    }
-    export class Add extends Operation {
-        public constructor(args: Node[]) {
-            super("+", OperationType.INFIX, args);
-        }
-    }
-    export class Mul extends Operation {
-        public constructor(args: Node[]) {
-            super("*", OperationType.INFIX, args);
-        }
-
-        protected toTexImpl(...args: string[]): string {
-            return args.reduce((t, c) => `${t} * ${c}`);
-        }
-    }
-    export class Div extends Operation {
-        public constructor(args: Node[]) {
-            super("/", OperationType.INFIX, args);
-        }
-
-        protected toTexImpl(...args: string[]): string {
-            return args.reduce((t, c) => `\\dfrac{${t}}{${c}}`);
-        }
-    }
-    export class Tanh extends Operation {
-        public constructor(x: Node) {
-            super("tanh", OperationType.FUNCTION, [x]);
-        }
-
-        protected toTexImpl(x: string): string {
-            return `\\tanh{\\left(${x}\\right)}`;
         }
     }
 

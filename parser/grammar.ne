@@ -36,13 +36,13 @@ function $(o: obj) {
 
 @{%
 import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from "./parser-tree.js";
+import { functions } from '../ad/operations.js';
 
 export const graph: Node[] = [];
 export const rules: string[] = [];
-export const functions: string[] = ['+', '-', '*', '/'];
 
 function opOr(name: string, message: string, ...operands: Node[]): Node {
-    return functions.includes(name) ? new Operation(name, operands)
+    return functions.has(name) ? new Operation(name, operands)
         : rules.includes(name) ? new RuleRef(name, operands)
             : new ErrorNode(name, message, operands);
 }
@@ -75,7 +75,7 @@ function ->
 component ->
     operand {% id %}
   | "(" _ function _ ")" {% _(([, f, ]) => f) %}
-  | %name _ "(" _ component _ ("," _ component _):* _ ")" {%
+  | %name _ "(" _ function _ ("," _ function _):* _ ")" {%
     _(([op, , first, rest, ]) => opOr(op, `Unknown function ${op}(...)`, first, ...rest.map((e: any) => e[1])))
 %}
 

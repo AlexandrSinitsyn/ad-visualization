@@ -1,5 +1,6 @@
 import { Algorithm, Step, Update, ErrorStep } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
+import { BrowserInitializationError } from "../util/errors.js";
 
 export type Millis = number;
 export type Frame = number;
@@ -154,7 +155,7 @@ class GraphDrawer {
                 // @ts-ignore
                 d3.transition("main").ease(d3.easeLinear).delay(500).duration(1500)).logEvents(false);
         } catch (e: any) {
-            throw new Error(`Can not initialize GraphManager due to invalid element id "${elementId}"`)
+            throw new BrowserInitializationError(`Can not initialize GraphManager due to invalid element id "${elementId}"`)
         }
 
         this.isAnimated = true;
