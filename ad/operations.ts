@@ -32,7 +32,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
         }
 
         diff(): void {
-            diff(this.df!, ...this.children);
+            diff(this.df, ...this.children);
         }
     }
 
@@ -46,24 +46,34 @@ function factory(symbol: string, type: FunctionTree.OperationType,
 const Add = factory(
     '+', FunctionTree.OperationType.INFIX,
     (...operands) => operands.reduce((t, c) => `${t} + ${c}`),
-    (...args) => args.map((e) => e.v!).reduce((t, c) => t.add(c)),
-    (df, ...args) => args.forEach((e) => e.df = df!)
+    (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
+    (df, ...args) => args.forEach((e) => e.df = df)
 );
 
 const Tanh = factory(
     'tanh', FunctionTree.OperationType.FUNCTION,
     (x) => `\\tanh\\left(${x}\\right)`,
-    (x) => x.v!.apply((i, j, e) => Math.tanh(e)),
+    (x) => x.v.apply((i, j, e) => Math.tanh(e)),
     (df, x) => x.df = df.apply((i, j, e) => 1 - e ** 2)
 );
 
 const Mul = factory(
     '*', FunctionTree.OperationType.INFIX,
     (a, b) => `${a} * ${b}`,
-    (a, b) => a.v!.mull(b.v!),
+    (a, b) => a.v.mull(b.v),
     (df, a, b) => {
-        a.df = df.adamar(b.v!.transpose());
-        b.df = a.v!.transpose().adamar(df);
+        a.df = df.adamar(b.v.transpose());
+        b.df = a.v.transpose().adamar(df);
     }
 );
 
+const Adamar = factory(
+    'had', FunctionTree.OperationType.FUNCTION,
+    (...args) => `had\\left(${args.join(', ')}\\right)`,
+    (...args) => args.map((e) => e.v).reduce((a, b) => a.adamar(b)),
+    (df, ...args) => args.forEach((child) => {
+        const ms = args.filter((x) => x !== child).map((e) => e.v);
+        ms.push(df);
+        child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)))
+    })
+)

@@ -3,9 +3,13 @@ import { AlgorithmError } from "../util/errors.js";
 
 export namespace GraphNodes {
     export abstract class Element {
-        // fixme
-        public v: Matrix | undefined = new ZeroMatrix();
-        public df: Matrix | undefined = new ZeroMatrix();
+        public v!: Matrix;
+        public df!: Matrix;
+
+        protected constructor() {
+            this.v = new ZeroMatrix();
+            this.df = new ZeroMatrix();
+        }
 
         public abstract eval(): void;
         public abstract diff(): void;
@@ -27,7 +31,7 @@ export namespace GraphNodes {
                 throw new AlgorithmError(`Variable [${this.name}] is not assigned. It was interpreted as zero-matrix`)
             }
 
-            this.df = this.v!.apply(() => 0);
+            this.df = this.v.apply(() => 0);
         }
 
         diff(): void {}

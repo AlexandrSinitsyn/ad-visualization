@@ -85,7 +85,7 @@ export class Algorithm {
     }
 
     private *calc(): Generator<Step> {
-        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
+        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i1 - i2)) {
             try {
                 e.eval();
 
@@ -101,7 +101,7 @@ export class Algorithm {
     }
 
     private *diff(): Generator<Step> {
-        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1).reverse()) {
+        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
             try {
                 e.diff();
 
