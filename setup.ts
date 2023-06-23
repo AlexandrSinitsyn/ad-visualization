@@ -61,79 +61,93 @@ $(document).ready(function () {
     });
 });
 
-// setup variables-input
-$(document).ready(function () {
-    let variables = 0;
+function newMatrix($parent: JQuery<HTMLElement>, onUpdate: (name: string, data: number[][]) => void, fixed: [number, number] | false) {
+    const $new = $($parent.find('template').prop('content')).clone();
 
-    const $variables = $('.variables').find('.content');
+    const $cell = $($new.find('template').prop('content'));
 
-    function newVar() {
-        const $new = $($variables.find('template').prop('content')).clone();
+    const $tbody = $new.find('tbody');
 
-        const $cell = $($new.find('template').prop('content'));
+    const getRowCount = () => $tbody.children().length;
+    const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
 
-        const $tbody = $new.find('tbody');
+    const $nameField = $new.find('.variable-name > .marker');
 
-        const getRowCount = () => $tbody.children().length;
-        const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
+    const genCell = () => {
+        const $newCell = $cell.clone();
+        const $inputField = $newCell.find('.table-item');
 
-        const $nameField = $new.find('.variable-name > .marker');
+        // fixme
+        $inputField.keyup(function () {
+            const VALUE: number[][] = [];
 
-        const genCell = () => {
-            const $newCell = $cell.clone();
-            const $inputField = $newCell.find('.table-item');
-
-            // fixme
-            $inputField.keyup(function () {
-                const VALUE: number[][] = [];
-
-                $tbody.find('tr').each(function (i: number) {
-                    VALUE.push([]);
-                    $(this).find('td').each(function () {
-                        VALUE[i].push(int($(this).find('.table-item')));
-                    })
-                });
-
-                console.log('>', str($nameField), '=', VALUE);
-
-                browser.updateValue(str($nameField), VALUE);
+            $tbody.find('tr').each(function (i: number) {
+                VALUE.push([]);
+                $(this).find('td').each(function () {
+                    VALUE[i].push(int($(this).find('.table-item')));
+                })
             });
 
-            return $newCell;
-        };
+            console.log('>', str($nameField), '=', VALUE);
 
-        const newRow = () => {
-            const rows = getRowCount();
-            if (rows >= 4) {
-                notify('Number of rows is not supported to be greater than 4')
-                return;
-            }
+            onUpdate(str($nameField), VALUE);
+        });
 
-            const $tr = $('<tr></tr>').appendTo($tbody);
-            $tbody.children().first().children().each((j) => {
-                $tr.append(genCell());
-            });
-        };
-        const newCol = () => {
-            const cols = getColCount();
-            if (cols >= 4) {
-                notify('Number of columns is not supported to be greater than 4')
-                return;
-            }
+        return $newCell;
+    };
 
-            $tbody.children().each((i, c) => {
-                $(c).append(genCell());
-            })
-        };
+    const newRow = () => {
+        const rows = getRowCount();
+        if (rows >= 4) {
+            notify('Number of rows is not supported to be greater than 4')
+            return;
+        }
 
-        // single cell
-        newRow();
-        newCol();
+        const $tr = $('<tr></tr>').appendTo($tbody);
+        $tbody.children().first().children().each((j) => {
+            $tr.append(genCell());
+        });
+    };
+    const newCol = () => {
+        const cols = getColCount();
+        if (cols >= 4) {
+            notify('Number of columns is not supported to be greater than 4')
+            return;
+        }
 
+        $tbody.children().each((i, c) => {
+            $(c).append(genCell());
+        })
+    };
+
+    // single cell
+    newRow();
+    newCol();
+
+    if (!fixed) {
         $new.find('.expand-right').click(newCol);
         $new.find('.expand-down').click(newRow);
+    } else {
+        for (let i = 0; i < fixed[0] - 1; i++) {
+            newRow();
+        }
+        for (let i = 0; i < fixed[1] - 1; i++) {
+            newCol();
+        }
+    }
 
-        $variables.append($new);
+    $parent.append($new);
+
+    return $new;
+}
+
+// setup variables-input
+$(document).ready(function () {
+    const $variables = $('#variables').find('.content');
+
+    // todo deprecate 'new-var'. new Algo -[returns]-> found vars
+    $('.new-var').click(() => {
+        newMatrix($variables, (name, v) => browser.updateValue(name, v), false);
 
         // noinspection JSJQueryEfficiency
         const $appender = $('.new-var').clone(true);
@@ -143,10 +157,19 @@ $(document).ready(function () {
         if ($variables.children().length < 5) {
             $variables.append($appender);
         }
-    }
+    });
 
-    // noinspection JSJQueryEfficiency
-    $('.new-var').click(() => newVar());
+    const $derivatives = $('#derivatives').find('.content');
+
+    browser.onAcceptDerivative((name: string, [rows, cols]: [number, number]) => {
+        $derivatives.children('.var').remove();
+
+        const $new = newMatrix($derivatives, (name, v) => browser.updateDerivative(name, v), [rows, cols]);
+
+        const $name = $new.find('.variable-name > .marker');
+
+        $name.text(name);
+    })
 });
 
 // LaTeX visualizer
@@ -166,6 +189,8 @@ $(document).ready(() => $('#function-input').keyup(function () {
 
     // @ts-ignore
     MathJax.typeset();
+
+    // todo remove all existing vars & df inputs
 
     const max = browser.setFunction(expr.graph);
 

@@ -23,7 +23,8 @@ aside {
             "fps remove-animation"
             "sep2 sep2"
             "function function"
-            "variables variables";
+            "variables variables"
+            "derivatives derivatives";
 }
 
 aside > * {
@@ -61,6 +62,9 @@ aside > .function {
 aside > .variables {
     grid-area: variables;
 }
+aside > .derivatives {
+    grid-area: derivatives;
+}
 
 aside > .sep1,
 aside > .sep2 {
@@ -81,7 +85,8 @@ aside .marker {
     color: var(--font-color);
 }
 
-aside > .variables > .content {
+aside > .variables > .content,
+aside > .derivatives > .content {
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -92,7 +97,8 @@ aside > .variables > .content {
     flex-wrap: wrap;
 }
 
-aside > .variables > .content > .var {
+aside > .variables > .content > .var,
+aside > .derivatives > .content > .var {
     width: auto;
     height: auto;
     padding: 0.25rem;

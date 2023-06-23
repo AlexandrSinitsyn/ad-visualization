@@ -1,4 +1,4 @@
-import { Algorithm, Step, Update, ErrorStep } from "./algo.js";
+import { Algorithm, AlgoStep, ErrorStep, Step, Update } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 import { BrowserInitializationError } from "../util/errors.js";
 
@@ -63,9 +63,15 @@ class ExpressionManager {
     private algo: Algorithm;
     private readonly updates: Step[];
 
+    private vars: Map<string, number[][]>;
+    private derivatives: Map<string, number[][]>;
+
     constructor(algorithm: Algorithm) {
         this.algo = algorithm;
         this.updates = [];
+
+        this.vars = new Map();
+        this.derivatives = new Map();
 
         this.init();
     }
@@ -82,7 +88,20 @@ class ExpressionManager {
                 break;
             }
 
-            this.updates.push(nxt.value);
+            const val = nxt.value;
+
+            if (typeof val !== "number"/*typeof AlgoStep*/) {
+                this.updates.push(nxt.value);
+                continue;
+            }
+
+            switch (val as AlgoStep) {
+                case AlgoStep.INIT:
+                case AlgoStep.CALC:
+                case AlgoStep.DIFF:
+                case AlgoStep.FINISH:
+                    break;
+            }
         }
     }
 
@@ -90,17 +109,25 @@ class ExpressionManager {
         return this.updates.length;
     }
 
-    public updateAlgorithm(vars: Map<string, number[][]>) {
-        this.algo = this.algo.updateAlgo(vars);
+    public updateVars(vars: Map<string, number[][]>): [string, [number, number]][] {
+        this.vars = vars;
+        this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
+
+        this.init();
+
+        return this.algo.getEdgeFunctions().map(([op, { name }]) => [name, op.v.size()]);
+    }
+
+    public updateDerivative(derivatives: Map<string, number[][]>) {
+        this.derivatives = derivatives;
+        this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
 
         this.init();
     }
 
     // fixme
     public errorsFound(frame: Frame): ErrorStep | undefined {
-        const errors = this.updates.slice(0, frame).filter((e) => typeof e === "string").map((e) => e as string);
-
-        return errors.length === 0 ? undefined : errors[0];
+        return this.updates.slice(0, frame).find((e) => typeof e === "string") as (ErrorStep | undefined);
     }
 
     private apply(frame: Frame): Update[] {
@@ -165,11 +192,21 @@ class GraphDrawer {
         this.expression = new ExpressionManager(algo);
     }
 
-    public updateAlgorithm(vars: Map<string, number[][]>) {
-        this.expression?.updateAlgorithm(vars);
+    /**
+     * Sets variables in the algorithm to the given
+     *
+     * @param vars map [name -> matrix]
+     * @return names and sizes of derivatives of the functions in the algorithm
+     */
+    public updateVars(vars: Map<string, number[][]>): [string, [number, number]][] {
+        return this.expression?.updateVars(vars) ?? [];
     }
 
-    public moveTo(frame: Frame): true | string {
+    public updateDerivative(derivatives: Map<string, number[][]>) {
+        this.expression?.updateDerivative(derivatives);
+    }
+
+    public moveTo(frame: Frame): true | ErrorStep {
         return this.render(frame);
     }
 
@@ -177,7 +214,7 @@ class GraphDrawer {
         return this.expression?.frameCount ?? 0;
     }
 
-    private render(frame: Frame): true | string {
+    private render(frame: Frame): true | ErrorStep {
         if (!this.expression) {
             throw 'NO FUNCTION IS PROVIDED';
         }
@@ -207,16 +244,19 @@ class GraphDrawer {
 export class BrowserManager {
     private player: Player | undefined;
     private boundPlayer!: (frame: Frame, result: true | string) => void;
+    private derivativeAcceptor!: (name: string, [rows, cols]: [number, number]) => void;
     private graphDrawer: GraphDrawer;
     private isOn: boolean;
 
     private readonly vars: Map<string, number[][]>;
+    private readonly derivatives: Map<string, number[][]>;
 
     public constructor(elementId: string) {
         this.graphDrawer = new GraphDrawer(elementId);
         this.isOn = false;
 
         this.vars = new Map();
+        this.derivatives = new Map();
     }
 
     private startTimer() {
@@ -270,7 +310,7 @@ export class BrowserManager {
     }
 
     public setFunction(graph: FunctionTree.Node[]) {
-        this.graphDrawer.setFunction(new Algorithm(graph, this.vars));
+        this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives));
 
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {
             const result = this.graphDrawer.moveTo(frame);
@@ -289,6 +329,18 @@ export class BrowserManager {
     public updateValue(name: string, v: number[][]) {
         this.vars.set(name, v);
 
-        this.graphDrawer.updateAlgorithm(this.vars);
+        const derivatives = this.graphDrawer.updateVars(this.vars);
+
+        derivatives.map(([name, [rows, cols]]) => this.derivativeAcceptor(name, [rows, cols]));
+    }
+
+    public updateDerivative(name: string, v: number[][]) {
+        this.derivatives.set(name, v);
+
+        this.graphDrawer.updateDerivative(this.derivatives);
+    }
+
+    public onAcceptDerivative(acceptor: (name: string, [rows, cols]: [number, number]) => void) {
+        this.derivativeAcceptor = acceptor;
     }
 }

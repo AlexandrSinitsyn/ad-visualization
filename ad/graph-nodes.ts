@@ -47,7 +47,7 @@ export namespace GraphNodes {
 
         public eval(): void {
             this.v = this.calc();
-            this.df = this.v.apply(() => 0);
+            this.df = new ZeroMatrix();
         }
         protected abstract calc(): Matrix;
     }
