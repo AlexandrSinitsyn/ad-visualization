@@ -1,4 +1,5 @@
 import { BrowserManager } from "./ad/browser-manager.js";
+import { FunctionTree } from "./ad/function-tree.js";
 import { parseFunction } from "./parser/parser.js";
 
 export const browser = new BrowserManager("graph");
@@ -61,7 +62,7 @@ $(document).ready(function () {
     });
 });
 
-function newMatrix($parent: JQuery<HTMLElement>, onUpdate: (name: string, data: number[][]) => void, fixed: [number, number] | false) {
+function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: number[][]) => void, fixed: [number, number] | false): JQuery<HTMLElement> {
     const $new = $($parent.find('template').prop('content')).clone();
 
     const $cell = $($new.find('template').prop('content'));
@@ -72,6 +73,7 @@ function newMatrix($parent: JQuery<HTMLElement>, onUpdate: (name: string, data: 
     const getColCount = () => $tbody.children().first()?.children()?.length ?? 0;
 
     const $nameField = $new.find('.variable-name > .marker');
+    $nameField.text(name);
 
     const genCell = () => {
         const $newCell = $cell.clone();
@@ -88,9 +90,9 @@ function newMatrix($parent: JQuery<HTMLElement>, onUpdate: (name: string, data: 
                 })
             });
 
-            console.log('>', str($nameField), '=', VALUE);
+            console.log('>', name, '=', VALUE);
 
-            onUpdate(str($nameField), VALUE);
+            onUpdate(VALUE);
         });
 
         return $newCell;
@@ -141,30 +143,15 @@ function newMatrix($parent: JQuery<HTMLElement>, onUpdate: (name: string, data: 
     return $new;
 }
 
+const $variables = $('.variables').find('.content');
+const $derivatives = $('.derivatives').find('.content');
+
 // setup variables-input
 $(document).ready(function () {
-    const $variables = $('#variables').find('.content');
-
-    // todo deprecate 'new-var'. new Algo -[returns]-> found vars
-    $('.new-var').click(() => {
-        newMatrix($variables, (name, v) => browser.updateValue(name, v), false);
-
-        // noinspection JSJQueryEfficiency
-        const $appender = $('.new-var').clone(true);
-        // noinspection JSJQueryEfficiency
-        $('.new-var').remove();
-
-        if ($variables.children().length < 5) {
-            $variables.append($appender);
-        }
-    });
-
-    const $derivatives = $('#derivatives').find('.content');
-
     browser.onAcceptDerivative((name: string, [rows, cols]: [number, number]) => {
         $derivatives.children('.var').remove();
 
-        const $new = newMatrix($derivatives, (name, v) => browser.updateDerivative(name, v), [rows, cols]);
+        const $new = newMatrix($derivatives, name, (v) => browser.updateDerivative(name, v), [rows, cols]);
 
         const $name = $new.find('.variable-name > .marker');
 
@@ -190,7 +177,12 @@ $(document).ready(() => $('#function-input').keyup(function () {
     // @ts-ignore
     MathJax.typeset();
 
-    // todo remove all existing vars & df inputs
+    $variables.children('.var').remove();
+
+    expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
+        const name = (n as FunctionTree.Variable).name;
+        newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+    })
 
     const max = browser.setFunction(expr.graph);
 

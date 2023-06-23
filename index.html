@@ -103,14 +103,14 @@
         <textarea id="function-input" class="form-control" placeholder="y = x^2
 f = y + 2 * x + ..."></textarea>
     </div>
-    <div id="variables" class="variables">
+    <div class="variables">
         <span class="marker">Variables</span>
         <div class="content">
             <template>
                 <div class="var">
-                    <label class="variable-name">
-                        <input class="marker" type="text" placeholder="name"/>
-                    </label>
+                    <div class="variable-name">
+                        <span class="marker"></span>
+                    </div>
                     <table class="input">
                         <template>
                             <td>
@@ -130,10 +130,9 @@ f = y + 2 * x + ..."></textarea>
                     </div>
                 </div>
             </template>
-            <span class="new-var btn btn-outline-primary bi bi-plus-lg"></span>
         </div>
     </div>
-    <div id="derivatives" class="derivatives">
+    <div class="derivatives">
         <span class="marker">Function derivatives</span>
         <div class="content">
             <template>
