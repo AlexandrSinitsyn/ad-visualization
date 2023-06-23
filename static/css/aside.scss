@@ -1,17 +1,21 @@
 :root {
-  --font-family: Comic Sans MS, Comic Sans, cursive;
-  --font-style: italic;
   --font-color: var(--secondary);
   --border-color: var(--primary);
   --separator-color: var(--secondary);
 }
 
 aside {
+  position: relative;
+  float: right;
+  width: 21vw;
+  margin: 1rem 1rem 6% 0;
+  padding: 1rem;
   border: 1px solid var(--border-color);
   border-radius: 0.25rem;
 
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-column-gap: 0.5rem;
   grid-template-areas:
             "play step"
             "pause stop"
@@ -19,14 +23,16 @@ aside {
             "fps remove-animation"
             "sep2 sep2"
             "function function"
-            "variables variables";
+            "variables variables"
+            "derivatives derivatives";
 }
 
 aside > * {
   margin: 0.25rem;
+  width: 10vw;
 }
 
-@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'sep2' 'remove-animation' 'function' 'variables' {
+@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'remove-animation' 'sep2' 'function' 'variables' 'derivatives' {
   aside > .#{$name} {
     grid-area: unquote($name);
   }
@@ -34,40 +40,103 @@ aside > * {
 
 aside > .sep1,
 aside > .sep2 {
+  max-width: 100%;
   margin: 1rem 0;
   border-bottom: 1px solid var(--separator-color);
 }
 
-aside .marker {
+aside > .function * {
+  width: auto;
+}
+
+aside * {
   width: 100%;
-  font-family: var(--font-family);
-  font-style: var(--font-style);
+}
+
+aside .marker {
   color: var(--font-color);
 }
 
-aside > .variables >.content {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-evenly;
-  align-items: flex-start;
-  align-content: flex-start;
-}
+aside {
+  & > .variables,
+  & > .derivatives {
+    & > .content {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-evenly;
+      align-items: flex-start;
+      align-content: flex-start;
+      flex-wrap: wrap;
 
-aside > .variables > .content > .var {
-  display: grid;
-  grid-template-areas:
+      & > .var {
+        width: auto;
+        height: auto;
+        padding: 0.25rem;
+        margin: 0.5rem;
+        display: grid;
+        border: 1px solid var(--border-color);
+        border-radius: 0.25rem;
+        grid-column-gap: 0.5rem;
+        grid-template-areas:
             "variable-name variable-name"
             "input expand-right"
-            "expand-down unused";
-}
-
-@each $name in 'variable-name' 'input' 'expand-right' 'expand-down' 'unused' {
-  aside > .variables > .content > .var > .#{$name} {
-    grid-area: unquote($name);
+            "expand-down .";
+      }
+    }
   }
 }
 
-aside > .variables > .content > .var > .input .table-item {
-  border: 1px solid var(--border-color);
-  border-radius: 0.25rem;
+@each $name in 'variable-name' 'input' 'expand-right' 'expand-down' {
+  aside > .variables,
+  aside > .derivatives {
+    & > .content > .var > .#{$name} {
+      grid-area: unquote($name);
+    }
+  }
+}
+
+aside > .variables,
+aside > .derivatives {
+  & > .content > .var {
+    & > .variable-name {
+      width: 3rem;
+      margin: 0.25rem auto;
+    }
+
+    & > .input {
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      tr * {
+        width: 2rem;
+      }
+
+      th:nth-child(n + 2) {
+        padding-left: 0.5rem;
+      }
+
+      tr:last-child > th:nth-child(n + 2) {
+        padding-left: 0.5rem;
+      }
+    }
+
+    * {
+      text-align: center;
+    }
+
+    & > .expand-right {
+      width: 3rem;
+      height: 100%;
+    }
+
+    & > .expand-down {
+      width: 100%;
+      height: 2rem;
+    }
+  }
 }
