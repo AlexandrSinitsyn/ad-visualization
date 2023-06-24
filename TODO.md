@@ -3,7 +3,6 @@
 ### MUST-HAVE
 - if parser failed, **show the error** (from nearley &larr; it already has well-described problem) instead of throwing
 - variables-input && **fun-diff-input**
-- function priority
 
 ### LOOKING FOR
 - mark function as `A = x`, `B = y`, `C = A * B`, &hellip; (as in `B` task)
