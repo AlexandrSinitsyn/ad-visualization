@@ -98,6 +98,6 @@ export class ZeroMatrix extends Matrix {
     }
 
     toString(): string {
-        return '0';
+        return '';
     }
 }
