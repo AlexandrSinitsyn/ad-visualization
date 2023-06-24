@@ -32,6 +32,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
         }
 
         diff(): void {
+            this.children.forEach(it => it.df = it.v.apply(() => 0))
             diff(this.df, ...this.children);
         }
     }

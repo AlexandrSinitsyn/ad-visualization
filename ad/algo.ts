@@ -109,6 +109,7 @@ export class Algorithm {
 
     private *calc(): Generator<Step> {
         for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i1 - i2)) {
+            if (e instanceof GraphNodes.Var) continue
             try {
                 e.eval();
 
