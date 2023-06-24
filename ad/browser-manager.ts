@@ -157,7 +157,7 @@ class ExpressionManager {
         res += "node [shape=Mrecord, color=blue];\n";
 
         for (const {index, name, children, v, df} of this.apply(frame)) {
-            res += `${index} [label="${name}|{val: ${v ?? ''}|df:${df ?? ''}}"];\n`;
+            res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"];\n`;
 
             res += children.map((c) => `${index} -> ${c};`).join('\n');
         }

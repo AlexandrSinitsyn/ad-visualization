@@ -80,7 +80,7 @@ export class Matrix {
     }
 
     public toString(): string {
-        return this.data.map((row) => row.join(' ')).join('\n');
+        return this.data.map((row) => row.map(it => Number.isInteger(it) ? it : it.toFixed(3)).join(' ')).join('\\n');
     }
 
     private static gen(r: number, c: number): Matrix {
