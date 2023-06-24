@@ -47,14 +47,14 @@ const Add = factory(
     '+', FunctionTree.OperationType.INFIX,
     (...operands) => operands.reduce((t, c) => `${t} + ${c}`),
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
-    (df, ...args) => args.forEach((e) => e.df = df)
+    (df, ...args) => args.forEach((e) => e.df = e.df.add(df))
 );
 
 const Tanh = factory(
     'tanh', FunctionTree.OperationType.FUNCTION,
     (x) => `\\tanh\\left(${x}\\right)`,
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
-    (df, x) => x.df = df.apply((i, j, e) => 1 - e ** 2)
+    (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2))
 );
 
 const Mul = factory(
@@ -62,8 +62,8 @@ const Mul = factory(
     (a, b) => `${a} * ${b}`,
     (a, b) => a.v.mull(b.v),
     (df, a, b) => {
-        a.df = df.adamar(b.v.transpose());
-        b.df = a.v.transpose().adamar(df);
+        a.df = a.df.add(df.mull(b.v.transpose()));
+        b.df = b.df.add(a.v.transpose().mull(df));
     }
 );
 

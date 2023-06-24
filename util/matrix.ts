@@ -64,7 +64,7 @@ export class Matrix {
 
         const scalar = (a: number[], b: number[]) => a.reduce((t, c, i) => t + c * b[i], 0);
 
-        return this.apply((i, j, e) => scalar(this.row(i), other.col(j)));
+        return Matrix.gen(this.size()[0], other.size()[1]).apply((i, j, _) => scalar(this.row(i), other.col(j)));
     }
 
     public adamar(other: Matrix): Matrix {
@@ -76,11 +76,19 @@ export class Matrix {
     }
 
     public transpose(): Matrix {
-        return this.apply((i, j, _) => this.get(j, i));
+        return Matrix.gen(this.size()[1], this.size()[0]).apply((i, j, _) => this.get(j, i));
     }
 
     public toString(): string {
         return this.data.map((row) => row.join(' ')).join('\n');
+    }
+
+    private static gen(r: number, c: number): Matrix {
+        const resData = new Array(r);
+        for (let i = 0; i < resData.length; i++) {
+            resData[i] = Array(c).fill(0);
+        }
+        return new Matrix(resData)
     }
 }
 
