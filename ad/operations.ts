@@ -61,10 +61,10 @@ const Tanh = factory(
 const Mul = factory(
     '*', FunctionTree.OperationType.INFIX,
     (a, b) => `${a} * ${b}`,
-    (a, b) => a.v.mull(b.v),
+    (a, b) => a.v.mul(b.v),
     (df, a, b) => {
-        a.df = a.df.add(df.mull(b.v.transpose()));
-        b.df = b.df.add(a.v.transpose().mull(df));
+        a.df = a.df.add(df.mul(b.v.transpose()));
+        b.df = b.df.add(a.v.transpose().mul(df));
     }
 );
 
