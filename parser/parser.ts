@@ -62,22 +62,6 @@ function parseToTree<Tree>(
 
     const graph: Rule[] = result[0];
 
-    const isInfix = (op: string): boolean => functions.get(op) === FunctionTree.OperationType.INFIX;
-
-    function compress(v: Node): Node {
-        if (v instanceof Operation) {
-            const op = v as Operation;
-            const args = op.children.map(compress).flatMap((e) =>
-                e.constructor === Operation ?
-                    (e as Operation).name === op.name && isInfix(op.name) ? (e as Operation).children : [e] : [e])
-
-            op.children.length = 0;
-            op.children.push(...args);
-        }
-
-        return v;
-    }
-
     function dfs(v: Node): void {
         const str = v.toString();
 
@@ -118,7 +102,7 @@ function parseToTree<Tree>(
     }
 
     function convert(r: Rule): void {
-        dfs(compress(r.content));
+        dfs(r.content);
         rules.set(r.name, pieces.get(r.content.toString())!)
     }
 

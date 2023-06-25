@@ -44,9 +44,19 @@ function factory(symbol: string, type: FunctionTree.OperationType,
     return true;
 }
 
-const Add = factory(
+const AddInfix = factory(
     '+', FunctionTree.OperationType.INFIX,
-    (...operands) => operands.reduce((t, c) => `${t} + ${c}`),
+    (a, b) => `${a} + ${b}`,
+    (a, b) => a.v.add(b.v),
+    (df, a, b) => {
+        a.df = a.df.add(df);
+        b.df = b.df.add(df);
+    }
+);
+
+const Add = factory(
+    'add', FunctionTree.OperationType.FUNCTION,
+    (...args) => `add\\left(${args.join(', ')}\\right)`,
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
     (df, ...args) => args.forEach((e) => e.df = e.df.add(df))
 );
