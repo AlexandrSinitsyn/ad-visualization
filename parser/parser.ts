@@ -1,4 +1,4 @@
-import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
+import { Node, ErrorNode, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
 import { parserMapping, functions } from "../ad/operations.js";
@@ -36,7 +36,6 @@ class ParserResult<Tree> {
 
 function parseToTree<Tree>(
     input: string,
-    cnst: (v: number) => Tree,
     vrb: (name: string) => Tree,
     ops: Map<string, (args: Tree[]) => Tree>,
     onError: (content: string, message: string, args: Tree[]) => Tree
@@ -89,8 +88,6 @@ function parseToTree<Tree>(
         if (!pieces.has(str)) {
             const cur: Tree = (() => {
                 switch (v.constructor) {
-                    case Const:
-                        return cnst((v as Const).v);
                     case Variable:
                         return vrb((v as Variable).name);
                     case RuleRef:
@@ -137,7 +134,6 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
     try {
         const [rules, graph] = parseToTree<FunctionTree.Node>(
             input,
-            (v) => new FunctionTree.Const(v),
             (name) => new FunctionTree.Variable(name),
             parserMapping,
             (content, message, children) => {

@@ -27,19 +27,6 @@ export class ErrorNode extends Node {
     }
 }
 
-export class Const extends Node {
-    public readonly v: number;
-
-    public constructor(v: number) {
-        super();
-        this.v = v;
-    }
-
-    public toString(): string {
-        return this.v + '';
-    }
-}
-
 export class Variable extends Node {
     public readonly name: string;
 

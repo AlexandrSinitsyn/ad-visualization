@@ -15,18 +15,6 @@ export namespace FunctionTree {
         }
     }
 
-    export class Const extends Element {
-        public readonly value: number;
-
-        public constructor(value: number) {
-            super();
-            this.value = value;
-        }
-
-        public toString(): string {
-            return this.value + '';
-        }
-    }
     export class Variable extends Element {
         public readonly name: string;
 

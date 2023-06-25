@@ -3,11 +3,10 @@
 @{%
 // @ts-ignore
 const lexer = moo.compile({
-    float: /0|[+-]?[1-9][0-9]*(?:\.[0-9]*)?(?:[eE][+-]?[1-9][0-9]*)?/,
     syntax: ["=", "(", ",", ")"],
     name: /[a-zA-Z]+/,
-    add_lvl_op: /[+\-]/,
-    mul_lvl_op: /[*/]/,
+    add_lvl_op: /[+]/,
+    mul_lvl_op: /[*]/,
     ws: { match: /[ \t\n\r\f]/, lineBreaks: true },
 });
 %}
@@ -36,7 +35,7 @@ function $(o: obj) {
 %}
 
 @{%
-import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from "./parser-tree.js";
+import { Node, ErrorNode, Variable, RuleRef, Operation, Rule } from "./parser-tree.js";
 import { functions } from '../ad/operations.js';
 
 export const graph: Node[] = [];
@@ -69,11 +68,11 @@ expression -> %name _ "=" _ add_lvl {%
 %}
 
 add_lvl ->
-    mul_lvl __ %add_lvl_op __ add_lvl {% _(([left, op, right]) => new Operation(op, [left, right])) %}
+    mul_lvl _ %add_lvl_op _ add_lvl {% _(([left, op, right]) => new Operation(op, [left, right])) %}
   | mul_lvl {% id %}
 
 mul_lvl ->
-    component __ %mul_lvl_op __ mul_lvl {% _(([left, op, right]) => new Operation(op, [left, right])) %}
+    component _ %mul_lvl_op _ mul_lvl {% _(([left, op, right]) => new Operation(op, [left, right])) %}
   | component {% id %}
 
 component ->
@@ -84,8 +83,6 @@ component ->
 %}
 
 operand ->
-    %float {% _(([v]) => new Const(+v)) %}
-  | %name {% _(([n]) => new Variable(n)) %}
+    %name {% _(([n]) => new Variable(n)) %}
 
 _ -> %ws:* {% () => null %}
-__ -> %ws:+ {% () => null %}
