@@ -43,8 +43,14 @@ function parseToTree<Tree>(
 ): [Tree[], Tree[]] {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-    parser.feed(input);
-    const result = parser.results;
+    try {
+        parser.feed(input);
+    } catch (e: any) {
+        const lines = e.message.split("\n");
+        const id = lines[3].indexOf("^")
+        throw new ParserError(`Invalid syntax at line: ${lines[2].substring(0, id)} ->${lines[2].substring(id)}`);
+    }
+    let result = parser.results;
 
     if (result.length === 0) {
         throw new ParserError("Input matches nothing");
