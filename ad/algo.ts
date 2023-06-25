@@ -1,8 +1,8 @@
-import { FunctionTree } from "./function-tree.js";
-import { GraphNodes } from "./graph-nodes.js";
-import { Matrix, ZeroMatrix } from "../util/matrix.js";
-import { AlgorithmError } from "../util/errors.js";
-import { algoMapping } from "./operations.js";
+import {FunctionTree} from "./function-tree.js";
+import {GraphNodes} from "./graph-nodes.js";
+import {Matrix, ZeroMatrix} from "../util/matrix.js";
+import {AlgorithmError} from "../util/errors.js";
+import {algoMapping} from "./operations.js";
 
 export interface Update {
     index: number;
@@ -91,13 +91,7 @@ export class Algorithm {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
                     children = [];
-                    const variable = new GraphNodes.Var(e.name);
-
-                    if (this.vars.has(name)) {
-                        variable.v = this.vars.get(name)!;
-                    }
-
-                    return variable;
+                    return new GraphNodes.Var(e.name);
                 } else if (e instanceof FunctionTree.Operation) {
                     name = e.symbol;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
@@ -126,7 +120,9 @@ export class Algorithm {
 
     private *calc(): Generator<Step> {
         for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i1 - i2)) {
-            if (e instanceof GraphNodes.Var) continue
+            if (e instanceof GraphNodes.Var && this.vars.has(info.name)) {
+                e.v = this.vars.get(info.name)!;
+            }
             try {
                 e.eval();
 
