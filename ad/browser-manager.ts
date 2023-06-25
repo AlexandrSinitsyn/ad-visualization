@@ -115,7 +115,7 @@ class ExpressionManager {
 
         this.init();
 
-        return this.algo.getEdgeFunctions().map(([op, { name }]) => [name, op.v.size()]);
+        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
     }
 
     public updateDerivative(derivatives: Map<string, number[][]>) {
