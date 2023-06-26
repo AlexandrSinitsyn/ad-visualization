@@ -8,4 +8,5 @@ node_modules
 parser/grammar.ts
 
 ### Generated ###
-*.js
+# *.js
+# out

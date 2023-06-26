@@ -1,105 +1,79 @@
 import { AlgorithmError } from "./errors.js";
-
 export class Matrix {
-    private readonly data: number[][];
-
-    public constructor(data: number[][]) {
+    constructor(data) {
         this.data = data;
     }
-
-    public size(): [number, number] {
+    size() {
         return this.data.length === 0 ? [0, 0] : [this.data.length, this.data[0].length];
     }
-
-    public isZero(): boolean {
+    isZero() {
         return this instanceof ZeroMatrix;
     }
-
-    public apply(fn: (i: number, j: number, e: number) => number): Matrix {
+    apply(fn) {
         if (this.isZero()) {
             return new ZeroMatrix();
         }
-
         return new Matrix(this.data.map((row, i) => row.map((e, j) => fn(i, j, e))));
     }
-
-    public add(other: Matrix): Matrix {
-        other.equalSizeCheck(this)
+    add(other) {
+        other.equalSizeCheck(this);
         if (other.isZero()) {
             return new ZeroMatrix();
         }
-
         return this.apply((i, j, e) => e + other.get(i, j));
     }
-
-    public mul(other: Matrix): Matrix {
-        other.sizeCheck(([w, _]) => w == this.size()[1], `${this.size()[1]}, any`)
-
+    mul(other) {
+        other.sizeCheck(([w, _]) => w == this.size()[1], `${this.size()[1]}, any`);
         if (other.isZero()) {
             return new ZeroMatrix();
         }
-
-        const scalar = (a: number[], b: number[]) => a.reduce((t, c, i) => t + c * b[i], 0);
-
+        const scalar = (a, b) => a.reduce((t, c, i) => t + c * b[i], 0);
         return Matrix.gen(...this.size()).apply((i, j, _) => scalar(this.row(i), other.col(j)));
     }
-
-    public adamar(other: Matrix): Matrix {
-        other.equalSizeCheck(this)
+    adamar(other) {
+        other.equalSizeCheck(this);
         if (other.isZero()) {
             return new ZeroMatrix();
         }
-
         return this.apply((i, j, e) => e * other.get(i, j));
     }
-
-    public transpose(): Matrix {
+    transpose() {
         return Matrix.gen(...this.size()).apply((i, j, _) => this.get(j, i));
     }
-
-    public toString(): string {
+    toString() {
         return this.data.map((row) => row.map(it => Number.isInteger(it) ? it : it.toFixed(3)).join(' ')).join('\\n');
     }
-
-    private equalSizeCheck(expected: Matrix) {
+    equalSizeCheck(expected) {
         const [r, c] = expected.size();
-
         this.sizeCheck(([w, h]) => w === r && h === c, expected.size().toString());
     }
-
-    private sizeCheck(checker: (_: [number, number]) => boolean, expectedSize: string) {
+    sizeCheck(checker, expectedSize) {
         if (!checker(this.size())) {
             throw new AlgorithmError(`Invalid matrix size. Matrix size is [${this.size()}], but was expected [${expectedSize}]`);
         }
     }
-
-    private row(i: number): number[] {
+    row(i) {
         return this.data[i];
     }
-
-    private col(j: number): number[] {
+    col(j) {
         return this.data.map((row) => row[j]);
     }
-
-    private get(i: number, j: number): number {
+    get(i, j) {
         return this.data[i][j];
     }
-
-    private static gen(r: number, c: number): Matrix {
+    static gen(r, c) {
         const resData = new Array(r);
         for (let i = 0; i < resData.length; i++) {
             resData[i] = Array(c).fill(0);
         }
-        return new Matrix(resData)
+        return new Matrix(resData);
     }
 }
-
 export class ZeroMatrix extends Matrix {
-    public constructor() {
+    constructor() {
         super([[]]);
     }
-
-    toString(): string {
+    toString() {
         return '';
     }
 }

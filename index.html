@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--suppress JSUnresolvedLibraryURL -->
 <html lang="en">
 <meta name="version" content="v1.0">
 <meta name="build-date" content="06/2023">
@@ -11,19 +12,13 @@
 
     <!-- bootstrap -->
 
-    <!--suppress JSUnresolvedLibraryURL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 
 
-    <!--suppress JSUnresolvedLibraryURL -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-    <!--suppress JSUnresolvedLibraryURL -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
-    <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
-    <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-    <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 
     <!-- local -->
@@ -31,22 +26,14 @@
     <link rel="stylesheet" type="text/css" href="static/css/base.css">
     <link rel="stylesheet" type="text/css" href="static/css/aside.css">
 
-    <!--    <script type="text/javascript" src="ad/functions/functions.js"></script>-->
-    <script type="module" src="ad/algo.js"></script>
-    <script type="module" src="ad/function-tree.js"></script>
-
     <!-- graphviz -->
 
     <script src="//d3js.org/d3.v5.min.js"></script>
-    <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://unpkg.com/@hpcc-js/wasm@0.3.11/dist/index.min.js"></script>
-    <!--suppress JSUnresolvedLibraryURL -->
     <script src="https://unpkg.com/d3-graphviz@3.0.5/build/d3-graphviz.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/nearley@2.20.1/lib/nearley.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moo@0.5.2/moo.min.js"></script>
-    <script type="module" src="parser/grammar.js"></script>
-    <script type="module" src="parser/parser.js"></script>
 
     <!-- mathjax -->
 
@@ -67,11 +54,11 @@
             }
         };
     </script>
-    <!--suppress JSUnresolvedLibraryURL -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 
     <!-- loader -->
 
+    <!--suppress JSUnresolvedFunction -->
     <script type="text/javascript" >
         $(document).ready(() => {
             const version = $('meta[name="version"]').attr('content');
@@ -81,7 +68,7 @@
         });
     </script>
 
-    <script type="module" src="./setup.js"></script>
+    <script type="module" src="./static/js/setup.js"></script>
 
     <link rel="icon" href="static/img/ad.ico">
     <title>AD Visualization</title>
@@ -100,8 +87,8 @@
     <div class="sep2"></div>
     <div class="function">
         <label for="function-input" class="marker">Function</label>
-        <textarea id="function-input" class="form-control" placeholder="y = x^2
-f = y + 2 * x + ..."></textarea>
+        <textarea id="function-input" class="form-control" placeholder="y = x * x
+f = y + 2 * x + &hellip;"></textarea>
     </div>
     <div class="variables">
         <span class="marker">Variables</span>
@@ -167,7 +154,7 @@ f = y + 2 * x + ..."></textarea>
     <div id="graph"></div>
 </main>
 <footer>
-    &copy; Powered by <code>@AlexSin</code> & <code>@Rabysh239</code>
+    &copy; Powered by <code>@AlexSin</code> &amp; <code>@Rabysh239</code>
 </footer>
 </body>
 </html>
