@@ -172,7 +172,7 @@ $(document).ready(() => $('#function-input').keyup(function () {
     }
 
     const $function = $('#function-show');
-    $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+    $function.text(expr.expr().map((e) => '\\[' + e.toTex(undefined) + '\\]').join(''));
 
     // @ts-ignore
     MathJax.typeset();

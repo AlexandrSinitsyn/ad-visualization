@@ -1,16 +1,20 @@
 export namespace FunctionTree {
-    export interface Node {
-        arrangeByDepth(depth: number): Map<number, Node[]>
-        toString(): string;
-        toTex(): string;
+    export abstract class Node {
+        public readonly priority: Priority | undefined;
+        constructor(priority: Priority | undefined) {
+            this.priority = priority;
+        }
+        abstract arrangeByDepth(depth: number): Map<number, Node[]>
+        abstract toString(): string;
+        abstract toTex(parentPriority: Priority | undefined): string;
     }
 
-    abstract class Element implements Node {
+    abstract class Element extends Node {
         public arrangeByDepth(depth: number): Map<number, Node[]> {
             return new Map([[depth, [this]]]);
         }
 
-        public toTex(): string {
+        public toTex(parentPriority: Priority | undefined): string {
             return this.toString();
         }
     }
@@ -19,7 +23,7 @@ export namespace FunctionTree {
         public readonly name: string;
 
         public constructor(name: string) {
-            super();
+            super(undefined);
             this.name = name;
         }
 
@@ -35,12 +39,18 @@ export namespace FunctionTree {
         FUNCTION,
     }
 
-    export abstract class Operation implements Node {
+    export enum Priority {
+        ADD,
+        MUL
+    }
+
+    export abstract class Operation extends Node {
         public readonly symbol: string;
         public readonly type: OperationType;
         public readonly operands: Node[];
 
-        protected constructor(symbol: string, type: OperationType, operands: Node[]) {
+        protected constructor(symbol: string, type: OperationType, operands: Node[], priority: Priority | undefined = undefined) {
+            super(priority)
             this.symbol = symbol;
             this.type = type;
             this.operands = operands;
@@ -73,8 +83,12 @@ export namespace FunctionTree {
             }
         }
 
-        public toTex(): string {
-            return this.toTexImpl(...this.operands.map((n) => n.toTex()));
+        public toTex(parentPriority: Priority | undefined): string {
+            const tex = this.toTexImpl(...this.operands.map((n) => n.toTex(this.priority)));
+            return parentPriority != undefined
+            && this.priority != undefined
+            && parentPriority > this.priority
+                ? `(${tex})` : tex;
         }
 
         protected toTexImpl(...children: string[]): string {
@@ -93,7 +107,7 @@ export namespace FunctionTree {
         }
 
         protected toTexImpl(children: string): string {
-            return `{\\color{red}${this.content}}\\left(${this.operands.map((e) => e.toTex()).join(", ")}\\right)`;
+            return `{\\color{red}${this.content}}\\left(${this.operands.map((e) => e.toTex(this.priority)).join(", ")}\\right)`;
         }
     }
 }
