@@ -40,7 +40,7 @@ export namespace GraphNodes {
     export abstract class Operation extends Element {
         protected readonly children: Element[];
 
-        public constructor(children: Element[]) {
+        protected constructor(children: Element[]) {
             super();
             this.children = children;
         }

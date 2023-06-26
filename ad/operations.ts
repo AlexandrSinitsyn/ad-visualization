@@ -44,7 +44,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
     return true;
 }
 
-const AddInfix = factory(
+const Plus = factory(
     '+', FunctionTree.OperationType.INFIX,
     (a, b) => `${a} + ${b}`,
     (a, b) => a.v.add(b.v),
@@ -87,4 +87,4 @@ const Adamar = factory(
         ms.push(df);
         child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)))
     })
-)
+);

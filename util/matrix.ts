@@ -33,14 +33,15 @@ export class Matrix {
     }
 
     public mul(other: Matrix): Matrix {
-        other.sizeCheck(s => s[0] == this.size()[1], `${this.size()[1]}, any`)
+        other.sizeCheck(([w, _]) => w == this.size()[1], `${this.size()[1]}, any`)
+
         if (other.isZero()) {
             return new ZeroMatrix();
         }
 
         const scalar = (a: number[], b: number[]) => a.reduce((t, c, i) => t + c * b[i], 0);
 
-        return Matrix.gen(this.size()[0], other.size()[1]).apply((i, j, _) => scalar(this.row(i), other.col(j)));
+        return Matrix.gen(...this.size()).apply((i, j, _) => scalar(this.row(i), other.col(j)));
     }
 
     public adamar(other: Matrix): Matrix {
@@ -53,7 +54,7 @@ export class Matrix {
     }
 
     public transpose(): Matrix {
-        return Matrix.gen(this.size()[1], this.size()[0]).apply((i, j, _) => this.get(j, i));
+        return Matrix.gen(...this.size()).apply((i, j, _) => this.get(j, i));
     }
 
     public toString(): string {
@@ -61,10 +62,9 @@ export class Matrix {
     }
 
     private equalSizeCheck(expected: Matrix) {
-        return this.sizeCheck(
-            s => s[0] == expected.size()[0] && s[1] == expected.size()[1],
-            expected.size().toString()
-        );
+        const [r, c] = expected.size();
+
+        this.sizeCheck(([w, h]) => w === r && h === c, expected.size().toString());
     }
 
     private sizeCheck(checker: (_: [number, number]) => boolean, expectedSize: string) {
