@@ -32,6 +32,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
         }
 
         diff(): void {
+            this.children.forEach(it => it.df = it.v.apply(() => 0))
             diff(this.df, ...this.children);
         }
     }
@@ -43,27 +44,37 @@ function factory(symbol: string, type: FunctionTree.OperationType,
     return true;
 }
 
-const Add = factory(
+const AddInfix = factory(
     '+', FunctionTree.OperationType.INFIX,
-    (...operands) => operands.reduce((t, c) => `${t} + ${c}`),
+    (a, b) => `${a} + ${b}`,
+    (a, b) => a.v.add(b.v),
+    (df, a, b) => {
+        a.df = a.df.add(df);
+        b.df = b.df.add(df);
+    }
+);
+
+const Add = factory(
+    'add', FunctionTree.OperationType.FUNCTION,
+    (...args) => `add\\left(${args.join(', ')}\\right)`,
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
-    (df, ...args) => args.forEach((e) => e.df = df)
+    (df, ...args) => args.forEach((e) => e.df = e.df.add(df))
 );
 
 const Tanh = factory(
     'tanh', FunctionTree.OperationType.FUNCTION,
     (x) => `\\tanh\\left(${x}\\right)`,
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
-    (df, x) => x.df = df.apply((i, j, e) => 1 - e ** 2)
+    (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2))
 );
 
 const Mul = factory(
     '*', FunctionTree.OperationType.INFIX,
     (a, b) => `${a} * ${b}`,
-    (a, b) => a.v.mull(b.v),
+    (a, b) => a.v.mul(b.v),
     (df, a, b) => {
-        a.df = df.adamar(b.v.transpose());
-        b.df = a.v.transpose().adamar(df);
+        a.df = a.df.add(df.mul(b.v.transpose()));
+        b.df = b.df.add(a.v.transpose().mul(df));
     }
 );
 

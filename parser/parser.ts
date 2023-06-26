@@ -1,4 +1,4 @@
-import { Node, ErrorNode, Const, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
+import { Node, ErrorNode, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
 import { parserMapping, functions } from "../ad/operations.js";
@@ -36,15 +36,20 @@ class ParserResult<Tree> {
 
 function parseToTree<Tree>(
     input: string,
-    cnst: (v: number) => Tree,
     vrb: (name: string) => Tree,
     ops: Map<string, (args: Tree[]) => Tree>,
     onError: (content: string, message: string, args: Tree[]) => Tree
 ): [Tree[], Tree[]] {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-    parser.feed(input);
-    const result = parser.results;
+    try {
+        parser.feed(input);
+    } catch (e: any) {
+        const lines = e.message.split("\n");
+        const id = lines[3].indexOf("^")
+        throw new ParserError(`Invalid syntax at line: ${lines[2].substring(0, id)} ->${lines[2].substring(id)}`);
+    }
+    let result = parser.results;
 
     if (result.length === 0) {
         throw new ParserError("Input matches nothing");
@@ -57,22 +62,6 @@ function parseToTree<Tree>(
 
     const graph: Rule[] = result[0];
 
-    const isInfix = (op: string): boolean => functions.get(op) === FunctionTree.OperationType.INFIX;
-
-    function compress(v: Node): Node {
-        if (v instanceof Operation) {
-            const op = v as Operation;
-            const args = op.children.map(compress).flatMap((e) =>
-                e.constructor === Operation ?
-                    (e as Operation).name === op.name && isInfix(op.name) ? (e as Operation).children : [e] : [e])
-
-            op.children.length = 0;
-            op.children.push(...args);
-        }
-
-        return v;
-    }
-
     function dfs(v: Node): void {
         const str = v.toString();
 
@@ -83,8 +72,6 @@ function parseToTree<Tree>(
         if (!pieces.has(str)) {
             const cur: Tree = (() => {
                 switch (v.constructor) {
-                    case Const:
-                        return cnst((v as Const).v);
                     case Variable:
                         return vrb((v as Variable).name);
                     case RuleRef:
@@ -115,7 +102,7 @@ function parseToTree<Tree>(
     }
 
     function convert(r: Rule): void {
-        dfs(compress(r.content));
+        dfs(r.content);
         rules.set(r.name, pieces.get(r.content.toString())!)
     }
 
@@ -131,7 +118,6 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
     try {
         const [rules, graph] = parseToTree<FunctionTree.Node>(
             input,
-            (v) => new FunctionTree.Const(v),
             (name) => new FunctionTree.Variable(name),
             parserMapping,
             (content, message, children) => {

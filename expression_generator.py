@@ -9,10 +9,6 @@ def rndOf(*lst):
     return lst[randint(0, len(lst) - 1)]
 
 
-def rndConst():
-    return "new FunctionTree.Const(" + str(rnd()) + ")"
-
-
 def rndVariable():
     return 'new FunctionTree.Variable("' + rndOf('x', 'y', 'z') + '")'
 
@@ -24,8 +20,6 @@ def rndExpr(i):
         return rndBinary(i)
     if i < 3 and rec > 40:
         return rndUnary(i)
-    elif rec > 20:
-        return rndConst()
     else:
         return rndVariable()
     return '?'
@@ -38,7 +32,7 @@ def rndUnary(i):
 
 
 def rndBinary(i):
-    name = rnd('Add', 'Div')
+    name = rnd('Add')
 
     return 'new FunctionTree.' + name + '(' + rndExpr(i + 1) + ', ' + rndExpr(i + 1) + ')'
 

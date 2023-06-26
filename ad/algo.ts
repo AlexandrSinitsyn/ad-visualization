@@ -1,8 +1,8 @@
-import { FunctionTree } from "./function-tree.js";
-import { GraphNodes } from "./graph-nodes.js";
-import { Matrix, ZeroMatrix } from "../util/matrix.js";
-import { AlgorithmError } from "../util/errors.js";
-import { algoMapping } from "./operations.js";
+import {FunctionTree} from "./function-tree.js";
+import {GraphNodes} from "./graph-nodes.js";
+import {Matrix, ZeroMatrix} from "../util/matrix.js";
+import {AlgorithmError} from "../util/errors.js";
+import {algoMapping} from "./operations.js";
 
 export interface Update {
     index: number;
@@ -41,10 +41,23 @@ export class Algorithm {
         this.derivatives = new Map([...derivatives.entries()].map(([name, v]) => [name, new Matrix(v)]));
     }
 
-    // FIXME
-    public getEdgeFunctions(): [GraphNodes.Operation, Info][] {
-        const [op, info] = this.mapping.get(this.graph[this.graph.length - 1])!;
-        return [[op as GraphNodes.Operation, info]];
+    public getEdges(): [GraphNodes.Element, Info][] {
+        const edgeChecks = new Array<boolean>(this.graph.length).fill(true);
+        const dfs = (cur: number) => {
+            const [_, curInfo] = this.mapping.get(this.graph[cur])!;
+            curInfo.children.filter(it => edgeChecks[it]).forEach(next => {
+                edgeChecks[next] = false;
+                dfs(next);
+            })
+        }
+        for (let i = edgeChecks.length - 1; i >= 0; i--) {
+            if (edgeChecks[i]) dfs(i);
+        }
+        const edgeIds: number[] = [];
+        for (let i = 0; i < edgeChecks.length; i++) {
+            if (edgeChecks[i]) edgeIds.push(i);
+        }
+        return edgeIds.map(it => this.graph[it]).map(it => this.mapping.get(it)!);
     }
 
     public *step(): Generator<Step> {
@@ -63,6 +76,10 @@ export class Algorithm {
         yield AlgoStep.FINISH;
     }
 
+    public updateAlgo(newVars: Map<string, number[][]>, newDerivatives: Map<string, number[][]>): Algorithm {
+        return new Algorithm(this.graph, newVars, newDerivatives);
+    }
+
     private *init(): Generator<Step> {
         let index = 0;
 
@@ -74,13 +91,7 @@ export class Algorithm {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
                     children = [];
-                    const variable = new GraphNodes.Var(e.name);
-
-                    if (this.vars.has(name)) {
-                        variable.v = this.vars.get(name)!;
-                    }
-
-                    return variable;
+                    return new GraphNodes.Var(e.name);
                 } else if (e instanceof FunctionTree.Operation) {
                     name = e.symbol;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
@@ -109,6 +120,9 @@ export class Algorithm {
 
     private *calc(): Generator<Step> {
         for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i1 - i2)) {
+            if (e instanceof GraphNodes.Var && this.vars.has(info.name)) {
+                e.v = this.vars.get(info.name)!;
+            }
             try {
                 e.eval();
 
@@ -156,9 +170,5 @@ export class Algorithm {
             v: e.v,
             df: e.df,
         };
-    }
-
-    public updateAlgo(newVars: Map<string, number[][]>, newDerivatives: Map<string, number[][]>): Algorithm {
-        return new Algorithm(this.graph, newVars, newDerivatives);
     }
 }
