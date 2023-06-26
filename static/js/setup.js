@@ -122,30 +122,35 @@ $(document).ready(function () {
     });
 });
 // LaTeX visualizer
-$(document).ready(() => $('#function-input').keyup(function () {
-    const expr = parseFunction(str($("#function-input")));
-    const $functionError = $("#function-error");
-    if (!expr.isOk()) {
-        $functionError.text(expr.error());
-        $functionError.show();
-    }
-    else {
-        $functionError.hide();
-    }
-    const $function = $('#function-show');
-    $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
-    // @ts-ignore
-    MathJax.typeset();
-    $variables.children('.var').remove();
-    expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
-        const name = n.name;
-        newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+$(document).ready(function () {
+    const $funInput = $('#function-input');
+    $funInput.keyup(function () {
+        const expr = parseFunction(str($("#function-input")));
+        const $functionError = $("#function-error");
+        if (!expr.isOk()) {
+            $functionError.text(expr.error());
+            $functionError.show();
+        }
+        else {
+            $functionError.hide();
+        }
+        const $function = $('#function-show');
+        $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+        // @ts-ignore
+        MathJax.typeset();
+        $variables.children('.var').remove();
+        expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
+            const name = n.name;
+            newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+        });
+        const max = browser.setFunction(expr.graph);
+        const $player = $('#player');
+        $player.attr('max', max);
+        $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
     });
-    const max = browser.setFunction(expr.graph);
-    const $player = $('#player');
-    $player.attr('max', max);
-    $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
-}));
+    $funInput.text('f = x + y * tanh(x)');
+    $funInput.trigger('keyup');
+});
 // fps init
 $(document).ready(() => {
     // number of frames in one second

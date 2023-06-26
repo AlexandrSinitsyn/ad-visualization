@@ -160,37 +160,45 @@ $(document).ready(function () {
 });
 
 // LaTeX visualizer
-$(document).ready(() => $('#function-input').keyup(function () {
-    const expr = parseFunction(str($("#function-input")));
+$(document).ready(function () {
+    const $funInput = $('#function-input');
 
-    const $functionError = $("#function-error");
-    if (!expr.isOk()) {
-        $functionError.text(expr.error());
-        $functionError.show();
-    } else {
-        $functionError.hide();
-    }
+    $funInput.keyup(function () {
+        const expr = parseFunction(str($("#function-input")));
 
-    const $function = $('#function-show');
-    $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+        const $functionError = $("#function-error");
+        if (!expr.isOk()) {
+            $functionError.text(expr.error());
+            $functionError.show();
+        } else {
+            $functionError.hide();
+        }
 
-    // @ts-ignore
-    MathJax.typeset();
+        const $function = $('#function-show');
+        $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
 
-    $variables.children('.var').remove();
+        // @ts-ignore
+        MathJax.typeset();
 
-    expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
-        const name = (n as FunctionTree.Variable).name;
-        newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
-    })
+        $variables.children('.var').remove();
 
-    const max = browser.setFunction(expr.graph);
+        expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
+            const name = (n as FunctionTree.Variable).name;
+            newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+        })
 
-    const $player = $('#player');
-    $player.attr('max', max)
+        const max = browser.setFunction(expr.graph);
 
-    $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
-}));
+        const $player = $('#player');
+        $player.attr('max', max)
+
+        $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
+    });
+
+    $funInput.text('f = x + y * tanh(x)');
+
+    $funInput.trigger('keyup');
+});
 
 // fps init
 $(document).ready(() => {
