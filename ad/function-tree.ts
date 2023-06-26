@@ -1,15 +1,11 @@
 export namespace FunctionTree {
-    export abstract class Node {
-        public readonly priority: Priority | undefined;
-        constructor(priority: Priority | undefined) {
-            this.priority = priority;
-        }
-        abstract arrangeByDepth(depth: number): Map<number, Node[]>
-        abstract toString(): string;
-        abstract toTex(parentPriority: Priority | undefined): string;
+    export interface Node {
+        arrangeByDepth(depth: number): Map<number, Node[]>
+        toString(): string;
+        toTex(parentPriority: Priority | undefined): string;
     }
 
-    abstract class Element extends Node {
+    abstract class Element implements Node {
         public arrangeByDepth(depth: number): Map<number, Node[]> {
             return new Map([[depth, [this]]]);
         }
@@ -23,7 +19,7 @@ export namespace FunctionTree {
         public readonly name: string;
 
         public constructor(name: string) {
-            super(undefined);
+            super();
             this.name = name;
         }
 
@@ -44,16 +40,17 @@ export namespace FunctionTree {
         MUL
     }
 
-    export abstract class Operation extends Node {
+    export abstract class Operation implements Node {
         public readonly symbol: string;
         public readonly type: OperationType;
         public readonly operands: Node[];
+        public readonly priority: Priority | undefined;
 
         protected constructor(symbol: string, type: OperationType, operands: Node[], priority: Priority | undefined = undefined) {
-            super(priority)
             this.symbol = symbol;
             this.type = type;
             this.operands = operands;
+            this.priority = priority;
         }
 
         arrangeByDepth(depth: number): Map<number, FunctionTree.Node[]> {
