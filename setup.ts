@@ -175,7 +175,7 @@ $(document).ready(function () {
         }
 
         const $function = $('#function-show');
-        $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+        $function.text(expr.expr().map((e) => '\\[' + e.toTex(undefined) + '\\]').join(''));
 
         // @ts-ignore
         MathJax.typeset();

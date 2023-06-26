@@ -11,10 +11,11 @@ export const functions: Map<string, FunctionTree.OperationType> = new Map();
 function factory(symbol: string, type: FunctionTree.OperationType,
                  toTex: (...operands: string[]) => string,
                  calc: (...operands: GraphNodes.Element[]) => Matrix,
-                 diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void): true {
+                 diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void,
+                 priority: FunctionTree.Priority | undefined = undefined): true {
     const ParserOp = class ParserOp extends FunctionTree.Operation {
         constructor(operands: FunctionTree.Node[]) {
-            super(symbol, type, operands);
+            super(symbol, type, operands, priority);
         }
 
         protected toTexImpl(...children: string[]): string {
@@ -51,7 +52,8 @@ const Plus = factory(
     (df, a, b) => {
         a.df = a.df.add(df);
         b.df = b.df.add(df);
-    }
+    },
+    FunctionTree.Priority.ADD
 );
 
 const Add = factory(
@@ -75,7 +77,8 @@ const Mul = factory(
     (df, a, b) => {
         a.df = a.df.add(df.mul(b.v.transpose()));
         b.df = b.df.add(a.v.transpose().mul(df));
-    }
+    },
+    FunctionTree.Priority.MUL
 );
 
 const Adamar = factory(
