@@ -51,4 +51,7 @@ export class Rule {
         this.name = name;
         this.content = content;
     }
+    toString() {
+        return `${this.name} = ${this.content.toString()}`;
+    }
 }

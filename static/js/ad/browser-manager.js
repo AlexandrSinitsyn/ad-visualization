@@ -1,4 +1,4 @@
-import { Algorithm, AlgoStep } from "./algo.js";
+import { Algorithm, AlgoStep, TypeChecking } from "./algo.js";
 import { BrowserInitializationError } from "../util/errors.js";
 class Player {
     constructor(frameTime, frameNumber, onUpdate) {
@@ -53,7 +53,7 @@ class ExpressionManager {
                 break;
             }
             const val = nxt.value;
-            if (typeof val !== "number" /*typeof AlgoStep*/) {
+            if (!TypeChecking.isAlgoStep(val)) {
                 this.updates.push(nxt.value);
                 continue;
             }
@@ -73,26 +73,30 @@ class ExpressionManager {
         this.vars = vars;
         this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
         this.init();
-        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
+        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
     }
     updateDerivative(derivatives) {
         this.derivatives = derivatives;
         this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
         this.init();
     }
-    // fixme
     errorsFound(frame) {
-        return this.updates.slice(0, frame).find((e) => typeof e === "string");
+        return this.updates.slice(0, frame).find((e) => TypeChecking.isErrorStep(e));
     }
     apply(frame) {
         const res = [];
         for (const step of this.updates.slice(0, frame)) {
+            if (TypeChecking.isRuleDef(step)) {
+                res.push(step);
+                continue;
+            }
             const u = step;
-            const prev = res.find((e) => e.index === u.index);
+            const prev = res.find((e) => TypeChecking.isUpdate(e) && e.index === u.index);
             if (!prev) {
                 res.push(u);
                 continue;
             }
+            prev.name = u.name;
             prev.v = u.v;
             prev.df = u.df;
         }
@@ -102,9 +106,23 @@ class ExpressionManager {
         let res = "digraph {\n";
         res += "rankdir=RL;\n";
         res += "node [shape=Mrecord, color=blue];\n";
-        for (const { index, name, children, v, df } of this.apply(frame)) {
-            res += `${index} [label="${name}|{val:\\n${v !== null && v !== void 0 ? v : ''}|df:\\n${df !== null && df !== void 0 ? df : ''}}"];\n`;
-            res += children.map((c) => `${index} -> ${c};`).join('\n');
+        const clusters = [];
+        for (const f of this.apply(frame)) {
+            if (TypeChecking.isRuleDef(f)) {
+                clusters.push(f);
+            }
+            else {
+                const { index, name, children, v, df } = f;
+                res += `${index} [label="${name}|{val:\\n${v !== null && v !== void 0 ? v : ''}|df:\\n${df !== null && df !== void 0 ? df : ''}}"];\n`;
+                res += children.map((c) => `${index} -> ${c};`).join('\n');
+                res += '\n';
+            }
+        }
+        for (const c of clusters) {
+            res += `subgraph cluster_${c.name} {`;
+            res += c.content.join('\n');
+            res += `\nlabel="${c.name}"`;
+            res += `}\n`;
         }
         res += "}";
         return res;

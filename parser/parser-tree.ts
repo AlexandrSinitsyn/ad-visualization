@@ -78,4 +78,8 @@ export class Rule {
         this.name = name;
         this.content = content;
     }
+
+    public toString(): string {
+        return `${this.name} = ${this.content.toString()}`;
+    }
 }

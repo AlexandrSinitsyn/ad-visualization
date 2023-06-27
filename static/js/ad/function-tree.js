@@ -1,16 +1,22 @@
 export var FunctionTree;
 (function (FunctionTree) {
-    class Element {
+    class Node {
+        constructor(priority) {
+            this.priority = priority;
+        }
+    }
+    FunctionTree.Node = Node;
+    class Element extends Node {
         arrangeByDepth(depth) {
             return new Map([[depth, [this]]]);
         }
-        toTex() {
+        toTex(parentPriority) {
             return this.toString();
         }
     }
     class Variable extends Element {
         constructor(name) {
-            super();
+            super(undefined);
             this.name = name;
         }
         toString() {
@@ -25,8 +31,14 @@ export var FunctionTree;
         OperationType[OperationType["INFIX"] = 2] = "INFIX";
         OperationType[OperationType["FUNCTION"] = 3] = "FUNCTION";
     })(OperationType = FunctionTree.OperationType || (FunctionTree.OperationType = {}));
-    class Operation {
-        constructor(symbol, type, operands) {
+    let Priority;
+    (function (Priority) {
+        Priority[Priority["ADD"] = 0] = "ADD";
+        Priority[Priority["MUL"] = 1] = "MUL";
+    })(Priority = FunctionTree.Priority || (FunctionTree.Priority = {}));
+    class Operation extends Node {
+        constructor(symbol, type, operands, priority = undefined) {
+            super(priority);
             this.symbol = symbol;
             this.type = type;
             this.operands = operands;
@@ -42,26 +54,46 @@ export var FunctionTree;
                 return t;
             });
         }
-        toString() {
+        toString(operands = this.operands.map((e) => e.toString())) {
             switch (this.type) {
                 case OperationType.PREFIX:
-                    return this.symbol + this.operands.join(" ");
+                    return this.symbol + operands.join(" ");
                 case OperationType.POSTFIX:
-                    return this.operands.join(" ") + this.symbol;
+                    return operands.join(" ") + this.symbol;
                 case OperationType.INFIX:
-                    return this.operands.join(` ${this.symbol} `);
+                    return operands.join(` ${this.symbol} `);
                 case OperationType.FUNCTION:
-                    return this.symbol + "(" + this.operands.join(", ") + ")";
+                    return this.symbol + "(" + operands.join(", ") + ")";
             }
         }
-        toTex() {
-            return this.toTexImpl(...this.operands.map((n) => n.toTex()));
+        toTex(parentPriority) {
+            const tex = this.toTexImpl(...this.operands.map((n) => n.toTex(this.priority)));
+            return (parentPriority !== undefined
+                && this.priority !== undefined
+                && parentPriority > this.priority) ? `(${tex})` : tex;
         }
         toTexImpl(...children) {
             return this.toString().replace(' ', '~');
         }
     }
     FunctionTree.Operation = Operation;
+    class Rule /* named expression *//* named expression */  extends Node {
+        constructor(name, content) {
+            super(undefined);
+            this.name = name;
+            this.content = content;
+        }
+        arrangeByDepth(depth) {
+            return this.content.arrangeByDepth(depth);
+        }
+        toString(content = this.content.toString()) {
+            return `${this.name} = ${content}`;
+        }
+        toTex(parentPriority) {
+            return `${this.content.toTex(parentPriority)}`;
+        }
+    }
+    FunctionTree.Rule = Rule;
     class ErrorNode extends Operation {
         constructor(content, message, children) {
             super('???', OperationType.FUNCTION, children);
@@ -69,7 +101,7 @@ export var FunctionTree;
             this.message = message;
         }
         toTexImpl(children) {
-            return `{\\color{red}${this.content}}\\left(${this.operands.map((e) => e.toTex()).join(", ")}\\right)`;
+            return `{\\color{red}${this.content}}\\left(${this.operands.map((e) => e.toTex(this.priority)).join(", ")}\\right)`;
         }
     }
     FunctionTree.ErrorNode = ErrorNode;

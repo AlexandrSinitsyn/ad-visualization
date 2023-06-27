@@ -10,8 +10,30 @@ export var AlgoStep;
     AlgoStep[AlgoStep["DIFF"] = 2] = "DIFF";
     AlgoStep[AlgoStep["FINISH"] = 3] = "FINISH";
 })(AlgoStep || (AlgoStep = {}));
+export var TypeChecking;
+(function (TypeChecking) {
+    function isUpdate(step) {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['index', 'name', 'children', 'v', 'df'].map((v) => v in step).reduce((a, b) => a && b);
+    }
+    TypeChecking.isUpdate = isUpdate;
+    function isRuleDef(step) {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['name', 'index', 'content'].map((v) => v in step).reduce((a, b) => a && b);
+    }
+    TypeChecking.isRuleDef = isRuleDef;
+    function isAlgoStep(step) {
+        return step !== undefined && step !== null && typeof step === "number";
+    }
+    TypeChecking.isAlgoStep = isAlgoStep;
+    function isErrorStep(step) {
+        return step !== undefined && step !== null && typeof step === "string";
+    }
+    TypeChecking.isErrorStep = isErrorStep;
+})(TypeChecking || (TypeChecking = {}));
 export class Algorithm {
     constructor(graph, vars, derivatives) {
+        this.seq = this.genFunName();
         this.graph = graph;
         this.mapping = new Map();
         this.vars = new Map([...vars.entries()].map(([name, v]) => [name, new Matrix(v)]));
@@ -54,16 +76,19 @@ export class Algorithm {
     *init() {
         let index = 0;
         for (const e of this.graph) {
-            let name;
-            let children;
-            const vertex = (() => {
+            let name = '';
+            let nodeName = '';
+            let children = [];
+            const convert = (e) => {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
+                    nodeName = e.toString();
                     children = [];
                     return new GraphNodes.Var(e.name);
                 }
                 else if (e instanceof FunctionTree.Operation) {
-                    name = e.symbol;
+                    nodeName = this.funName();
+                    name = `${nodeName} = ${e.toString(e.operands.map((n) => this.mapping.get(n)[1].nodeName))}`;
                     children = e.operands.map((n) => this.mapping.get(n)[1].index);
                     const operands = e.operands.map((n) => this.mapping.get(n)[0]);
                     const fun = algoMapping.get(e.symbol);
@@ -72,12 +97,38 @@ export class Algorithm {
                     }
                     return fun(operands);
                 }
+                else if (e instanceof FunctionTree.Rule) {
+                    const node = convert(e.content);
+                    name = e.name + ' = ' + name.split(' = ')[1];
+                    nodeName = e.name;
+                    return node;
+                }
                 else {
                     throw 'UNSUPPORTED NODE TYPE';
                 }
-            })();
-            yield Algorithm.nodeToUpdate(vertex, { name, index, children });
-            this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
+            };
+            const vertex = convert(e);
+            this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
+            yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)[1]);
+            if (e instanceof FunctionTree.Rule) {
+                // const subgraph = (e: FunctionTree.Node): number[] => {
+                //     if (e instanceof FunctionTree.Operation) {
+                //         return e.operands.flatMap((n) => subgraph(n));
+                //     } else if (e instanceof FunctionTree.Variable) {
+                //         return [];
+                //     } else {
+                //         return [this.mapping.get(e)![1].index];
+                //     }
+                // };
+                //
+                // const content = subgraph(e.content);
+                // content.push(index);
+                yield {
+                    name: nodeName,
+                    index: index,
+                    content: [index],
+                };
+            }
             index++;
         }
     }
@@ -131,5 +182,23 @@ export class Algorithm {
             v: e.v,
             df: e.df,
         };
+    }
+    funName() {
+        return this.seq.next().value;
+    }
+    *genFunName() {
+        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+        chars.shift(); // remove 'A'
+        const res = [];
+        let i = 0;
+        while (true) {
+            res.push('a');
+            yield res.join('');
+            for (const c of chars) {
+                res[i] = c;
+                yield res.join('');
+            }
+            i++;
+        }
     }
 }

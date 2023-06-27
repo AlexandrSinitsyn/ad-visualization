@@ -12,6 +12,12 @@ export interface Update {
     df: Matrix | undefined;
 }
 
+export interface RuleDef {
+    name: string;
+    index: number;
+    content: number[];
+}
+
 export enum AlgoStep {
     INIT,
     CALC,
@@ -20,11 +26,35 @@ export enum AlgoStep {
 }
 
 export type ErrorStep = string;
-export type Step = Update | ErrorStep | AlgoStep;
+
+export type Meta = RuleDef;
+
+export type Step = Update | Meta | AlgoStep | ErrorStep;
+
+export namespace TypeChecking {
+    export function isUpdate(step: Step): step is Update {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['index', 'name', 'children', 'v', 'df'].map((v) => v in (step as object)).reduce((a, b) => a && b);
+    }
+
+    export function isRuleDef(step: Step): step is RuleDef {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['name', 'index', 'content'].map((v) => v in (step as object)).reduce((a, b) => a && b);
+    }
+
+    export function isAlgoStep(step: Step): step is AlgoStep {
+        return step !== undefined && step !== null && typeof step === "number";
+    }
+
+    export function isErrorStep(step: Step): step is ErrorStep {
+    return step !== undefined && step !== null && typeof step === "string";
+}
+}
 
 interface Info {
     index: number;
     name: string;
+    nodeName: string,
     children: number[];
 }
 
@@ -88,17 +118,20 @@ export class Algorithm {
         let index = 0;
 
         for (const e of this.graph) {
-            let name: string;
-            let children: number[];
+            let name: string = '';
+            let nodeName: string = '';
+            let children: number[] = [];
 
-            const vertex: GraphNodes.Element = (() => {
+            const convert = (e: FunctionTree.Node): GraphNodes.Element => {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
+                    nodeName = e.toString();
                     children = [];
 
                     return new GraphNodes.Var(e.name);
                 } else if (e instanceof FunctionTree.Operation) {
-                    name = e.symbol;
+                    nodeName = this.funName();
+                    name = `${nodeName} = ${e.toString(e.operands.map((n) => this.mapping.get(n)![1].nodeName))}`;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
 
                     const operands = e.operands.map((n) => this.mapping.get(n)![0]);
@@ -110,14 +143,44 @@ export class Algorithm {
                     }
 
                     return fun(operands);
+                } else if (e instanceof FunctionTree.Rule) {
+                    const node = convert(e.content);
+
+                    name = e.name + ' = ' + name.split(' = ')[1];
+                    nodeName = e.name;
+
+                    return node;
                 } else {
                     throw 'UNSUPPORTED NODE TYPE';
                 }
-            })();
+            }
 
-            yield Algorithm.nodeToUpdate(vertex, {name, index, children});
+            const vertex: GraphNodes.Element = convert(e);
 
-            this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
+            this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
+
+            yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)![1]);
+
+            if (e instanceof FunctionTree.Rule) {
+                // const subgraph = (e: FunctionTree.Node): number[] => {
+                //     if (e instanceof FunctionTree.Operation) {
+                //         return e.operands.flatMap((n) => subgraph(n));
+                //     } else if (e instanceof FunctionTree.Variable) {
+                //         return [];
+                //     } else {
+                //         return [this.mapping.get(e)![1].index];
+                //     }
+                // };
+                //
+                // const content = subgraph(e.content);
+                // content.push(index);
+
+                yield {
+                    name: nodeName,
+                    index: index,
+                    content: [index],
+                };
+            }
 
             index++;
         }
@@ -168,7 +231,7 @@ export class Algorithm {
         }
     }
 
-    private static nodeToUpdate(e: GraphNodes.Element, {name, index, children}: Info): Update {
+    private static nodeToUpdate(e: GraphNodes.Element, { name, index, children }: Info): Update {
         return {
             index: index,
             name: name,
@@ -176,5 +239,30 @@ export class Algorithm {
             v: e.v,
             df: e.df,
         };
+    }
+
+    private seq = this.genFunName();
+    private funName(): string {
+        return this.seq.next().value;
+    }
+
+    private *genFunName(): Generator<string> {
+        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+        chars.shift(); // remove 'A'
+
+        const res = [];
+
+        let i = 0;
+        while (true) {
+            res.push('a');
+            yield res.join('');
+
+            for (const c of chars) {
+                res[i] = c;
+                yield res.join('');
+            }
+
+            i++;
+        }
     }
 }

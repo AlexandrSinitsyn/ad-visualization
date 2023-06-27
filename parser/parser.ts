@@ -38,8 +38,9 @@ function parseToTree<Tree>(
     input: string,
     vrb: (name: string) => Tree,
     ops: Map<string, (args: Tree[]) => Tree>,
+    rule: (name: string, arg: Tree) => Tree,
     onError: (content: string, message: string, args: Tree[]) => Tree
-): [Tree[], Tree[]] {
+): { rules: Tree[], graph: Tree[] } {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     try {
@@ -58,7 +59,8 @@ function parseToTree<Tree>(
     // fixme (hashcode???)
     const pieces: Map<string, Tree> = new Map();
 
-    const rules: Map<string, Tree> = new Map();
+    // name -> [hashCode, Tree]
+    const rules: Map<string, [string, Tree]> = new Map();
 
     const graph: Rule[] = result[0];
 
@@ -75,7 +77,7 @@ function parseToTree<Tree>(
                     case Variable:
                         return vrb((v as Variable).name);
                     case RuleRef:
-                        return rules.get((v as RuleRef).name)!;
+                        return rules.get((v as RuleRef).name)![1];
                     case Operation:
                         const op = v as Operation;
                         op.children.forEach((e) => dfs(e));
@@ -97,18 +99,29 @@ function parseToTree<Tree>(
                 }
             })();
 
+            if (v instanceof RuleRef) {
+                pieces.delete(rules.get(v.name)![0]);
+            }
+
             pieces.set(str, cur);
         }
     }
 
     function convert(r: Rule): void {
         dfs(r.content);
-        rules.set(r.name, pieces.get(r.content.toString())!)
+
+        const content = pieces.get(r.content.toString())!;
+
+        pieces.set(r.content.toString(), rule(r.name, content));
+
+        rules.set(r.name, [r.content.toString(), pieces.get(r.content.toString())!]);
+
+        // console.log(rules, pieces)
     }
 
     graph.forEach(convert);
 
-    return [[...rules.values()], [...pieces.values()]];
+    return { rules: [...rules.values()].map(([_, tree]) => tree), graph: [...pieces.values()] };
 }
 
 // fixme
@@ -116,10 +129,11 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
     const errors: [string, string][] = [];
 
     try {
-        const [rules, graph] = parseToTree<FunctionTree.Node>(
+        const { rules, graph } = parseToTree<FunctionTree.Node>(
             input,
             (name) => new FunctionTree.Variable(name),
             parserMapping,
+            (name, content) => new FunctionTree.Rule(name, content),
             (content, message, children) => {
                 errors.push([content, message]);
                 return new FunctionTree.ErrorNode(content, message, children);

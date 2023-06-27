@@ -67,29 +67,57 @@ export namespace FunctionTree {
             });
         }
 
-        public toString(): string {
+        public toString(): string;
+        public toString(operands: string[]): string;
+        public toString(operands: string[] = this.operands.map((e) => e.toString())): string {
             switch (this.type) {
                 case OperationType.PREFIX:
-                    return this.symbol + this.operands.join(" ");
+                    return this.symbol + operands.join(" ");
                 case OperationType.POSTFIX:
-                    return this.operands.join(" ") + this.symbol;
+                    return operands.join(" ") + this.symbol;
                 case OperationType.INFIX:
-                    return this.operands.join(` ${this.symbol} `);
+                    return operands.join(` ${this.symbol} `);
                 case OperationType.FUNCTION:
-                    return this.symbol + "(" + this.operands.join(", ") + ")";
+                    return this.symbol + "(" + operands.join(", ") + ")";
             }
         }
 
         public toTex(parentPriority: Priority | undefined): string {
             const tex = this.toTexImpl(...this.operands.map((n) => n.toTex(this.priority)));
-            return parentPriority != undefined
-            && this.priority != undefined
-            && parentPriority > this.priority
-                ? `(${tex})` : tex;
+            return (
+                parentPriority !== undefined
+                && this.priority !== undefined
+                && parentPriority > this.priority
+            ) ? `(${tex})` : tex;
         }
 
         protected toTexImpl(...children: string[]): string {
             return this.toString().replace(' ', '~');
+        }
+    }
+
+    export class Rule /* named expression */ extends Node {
+        public readonly name: string;
+        public readonly content: Node;
+
+        public constructor(name: string, content: Node) {
+            super(undefined);
+            this.name = name;
+            this.content = content;
+        }
+
+        arrangeByDepth(depth: number): Map<number, FunctionTree.Node[]> {
+            return this.content.arrangeByDepth(depth);
+        }
+
+        toString(): string;
+        toString(content: string): string;
+        toString(content: string = this.content.toString()): string {
+            return `${this.name} = ${content}`;
+        }
+
+        toTex(parentPriority: FunctionTree.Priority | undefined): string {
+            return `${this.content.toTex(parentPriority)}`;
         }
     }
 

@@ -135,7 +135,10 @@ $(document).ready(function () {
             $functionError.hide();
         }
         const $function = $('#function-show');
-        $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+        $function.text(expr.expr().map((e) => {
+            const rule = e;
+            return '\\[' + rule.name + ' = ' + rule.toTex(undefined) + '\\]';
+        }).join(''));
         // @ts-ignore
         MathJax.typeset();
         $variables.children('.var').remove();
@@ -148,7 +151,7 @@ $(document).ready(function () {
         $player.attr('max', max);
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
     });
-    $funInput.text('f = x + y * tanh(x)');
+    $funInput.text('f = x + y\ng = f(x) * y'); //'f = x + y * tanh(x)');
     $funInput.trigger('keyup');
 });
 // fps init

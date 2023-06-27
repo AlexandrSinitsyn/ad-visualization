@@ -22,7 +22,7 @@ class ParserResult {
         return this._graph;
     }
 }
-function parseToTree(input, vrb, ops, onError) {
+function parseToTree(input, vrb, ops, rule, onError) {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     try {
@@ -39,6 +39,7 @@ function parseToTree(input, vrb, ops, onError) {
     }
     // fixme (hashcode???)
     const pieces = new Map();
+    // name -> [hashCode, Tree]
     const rules = new Map();
     const graph = result[0];
     function dfs(v) {
@@ -52,7 +53,7 @@ function parseToTree(input, vrb, ops, onError) {
                     case Variable:
                         return vrb(v.name);
                     case RuleRef:
-                        return rules.get(v.name);
+                        return rules.get(v.name)[1];
                     case Operation:
                         const op = v;
                         op.children.forEach((e) => dfs(e));
@@ -69,21 +70,27 @@ function parseToTree(input, vrb, ops, onError) {
                         throw new ParserError("Parsed graph somehow contains a Node which type is not supported");
                 }
             })();
+            if (v instanceof RuleRef) {
+                pieces.delete(rules.get(v.name)[0]);
+            }
             pieces.set(str, cur);
         }
     }
     function convert(r) {
         dfs(r.content);
-        rules.set(r.name, pieces.get(r.content.toString()));
+        const content = pieces.get(r.content.toString());
+        pieces.set(r.content.toString(), rule(r.name, content));
+        rules.set(r.name, [r.content.toString(), pieces.get(r.content.toString())]);
+        // console.log(rules, pieces)
     }
     graph.forEach(convert);
-    return [[...rules.values()], [...pieces.values()]];
+    return { rules: [...rules.values()].map(([_, tree]) => tree), graph: [...pieces.values()] };
 }
 // fixme
 export const parseFunction = (input) => {
     const errors = [];
     try {
-        const [rules, graph] = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (content, message, children) => {
+        const { rules, graph } = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (name, content) => new FunctionTree.Rule(name, content), (content, message, children) => {
             errors.push([content, message]);
             return new FunctionTree.ErrorNode(content, message, children);
         });
