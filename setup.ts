@@ -175,7 +175,10 @@ $(document).ready(function () {
         }
 
         const $function = $('#function-show');
-        $function.text(expr.expr().map((e) => '\\[' + e.toTex(undefined) + '\\]').join(''));
+        $function.text(expr.expr().map((e) => {
+            const rule = e as FunctionTree.Rule;
+            return '\\[' + rule.name + ' = ' + rule.toTex(undefined) + '\\]'
+        }).join(''));
 
         // @ts-ignore
         MathJax.typeset();

@@ -99,10 +99,7 @@ function parseToTree<Tree>(
                 }
             })();
 
-            console.log('>', v, '\n', pieces, '\n', graph)
-
             if (v instanceof RuleRef) {
-                console.log('ref:', v, rules.get(v.name), '\n', pieces.get(rules.get(v.name)![0]))
                 pieces.delete(rules.get(v.name)![0]);
             }
 

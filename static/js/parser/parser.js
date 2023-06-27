@@ -70,9 +70,7 @@ function parseToTree(input, vrb, ops, rule, onError) {
                         throw new ParserError("Parsed graph somehow contains a Node which type is not supported");
                 }
             })();
-            console.log('>', v, '\n', pieces, '\n', graph);
             if (v instanceof RuleRef) {
-                console.log('ref:', v, rules.get(v.name), '\n', pieces.get(rules.get(v.name)[0]));
                 pieces.delete(rules.get(v.name)[0]);
             }
             pieces.set(str, cur);

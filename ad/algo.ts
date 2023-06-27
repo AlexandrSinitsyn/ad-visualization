@@ -161,26 +161,24 @@ export class Algorithm {
 
             yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)![1]);
 
-            console.log('yield', e, vertex, index)
-
             if (e instanceof FunctionTree.Rule) {
-                const subgraph = (e: FunctionTree.Node): number[] => {
-                    if (e instanceof FunctionTree.Operation) {
-                        return e.operands.flatMap((n) => subgraph(n));
-                    } else if (e instanceof FunctionTree.Variable) {
-                        return [];
-                    } else {
-                        return [this.mapping.get(e)![1].index];
-                    }
-                };
-
-                const content = subgraph(e.content);
-                content.push(index);
+                // const subgraph = (e: FunctionTree.Node): number[] => {
+                //     if (e instanceof FunctionTree.Operation) {
+                //         return e.operands.flatMap((n) => subgraph(n));
+                //     } else if (e instanceof FunctionTree.Variable) {
+                //         return [];
+                //     } else {
+                //         return [this.mapping.get(e)![1].index];
+                //     }
+                // };
+                //
+                // const content = subgraph(e.content);
+                // content.push(index);
 
                 yield {
                     name: nodeName,
                     index: index,
-                    content: content,
+                    content: [index],
                 };
             }
 

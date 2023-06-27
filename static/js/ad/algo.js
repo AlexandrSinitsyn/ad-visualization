@@ -101,8 +101,6 @@ export class Algorithm {
                     const node = convert(e.content);
                     name = e.name + ' = ' + name.split(' = ')[1];
                     nodeName = e.name;
-                    // fixme Rule is always going right after it's content
-                    // index--;
                     return node;
                 }
                 else {
@@ -112,25 +110,23 @@ export class Algorithm {
             const vertex = convert(e);
             this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
             yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)[1]);
-            console.log('yield', e, vertex, index);
             if (e instanceof FunctionTree.Rule) {
-                const subgraph = (e) => {
-                    if (e instanceof FunctionTree.Operation) {
-                        return e.operands.flatMap((n) => subgraph(n));
-                    }
-                    else if (e instanceof FunctionTree.Variable) {
-                        return [];
-                    }
-                    else {
-                        return [this.mapping.get(e)[1].index];
-                    }
-                };
-                const content = subgraph(e.content);
-                content.push(index);
+                // const subgraph = (e: FunctionTree.Node): number[] => {
+                //     if (e instanceof FunctionTree.Operation) {
+                //         return e.operands.flatMap((n) => subgraph(n));
+                //     } else if (e instanceof FunctionTree.Variable) {
+                //         return [];
+                //     } else {
+                //         return [this.mapping.get(e)![1].index];
+                //     }
+                // };
+                //
+                // const content = subgraph(e.content);
+                // content.push(index);
                 yield {
                     name: nodeName,
                     index: index,
-                    content: content,
+                    content: [index],
                 };
             }
             index++;

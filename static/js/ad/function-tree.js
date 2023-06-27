@@ -90,7 +90,7 @@ export var FunctionTree;
             return `${this.name} = ${content}`;
         }
         toTex(parentPriority) {
-            return `${this.name} = ${this.content.toTex(parentPriority)}`;
+            return `${this.content.toTex(parentPriority)}`;
         }
     }
     FunctionTree.Rule = Rule;
