@@ -73,7 +73,7 @@ class ExpressionManager {
         this.vars = vars;
         this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
         this.init();
-        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
+        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
     }
     updateDerivative(derivatives) {
         this.derivatives = derivatives;
@@ -87,12 +87,14 @@ class ExpressionManager {
     apply(frame) {
         const res = [];
         for (const step of this.updates.slice(0, frame)) {
+            // if (typeof step === typeof RuleDef)
             const u = step;
             const prev = res.find((e) => e.index === u.index);
             if (!prev) {
                 res.push(u);
                 continue;
             }
+            prev.name = u.name;
             prev.v = u.v;
             prev.df = u.df;
         }

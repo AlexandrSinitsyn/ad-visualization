@@ -1,4 +1,4 @@
-import { Algorithm, AlgoStep, ErrorStep, Step, Update } from "./algo.js";
+import  { Algorithm, AlgoStep, Update, ErrorStep, Step } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 import { BrowserInitializationError } from "../util/errors.js";
 
@@ -115,7 +115,7 @@ class ExpressionManager {
 
         this.init();
 
-        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
+        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
     }
 
     public updateDerivative(derivatives: Map<string, number[][]>) {
@@ -143,6 +143,7 @@ class ExpressionManager {
                 continue;
             }
 
+            prev.name = u.name
             prev.v = u.v;
             prev.df = u.df;
         }

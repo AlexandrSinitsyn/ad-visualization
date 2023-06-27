@@ -135,7 +135,7 @@ $(document).ready(function () {
             $functionError.hide();
         }
         const $function = $('#function-show');
-        $function.text(expr.expr().map((e) => '\\[' + e.toTex() + '\\]').join(''));
+        $function.text(expr.expr().map((e) => '\\[' + e.toTex(undefined) + '\\]').join(''));
         // @ts-ignore
         MathJax.typeset();
         $variables.children('.var').remove();

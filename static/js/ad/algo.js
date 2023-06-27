@@ -10,8 +10,12 @@ export var AlgoStep;
     AlgoStep[AlgoStep["DIFF"] = 2] = "DIFF";
     AlgoStep[AlgoStep["FINISH"] = 3] = "FINISH";
 })(AlgoStep || (AlgoStep = {}));
+function isMeta(obj) {
+    return typeof obj !== undefined;
+}
 export class Algorithm {
     constructor(graph, vars, derivatives) {
+        this.seq = this.genFunName();
         this.graph = graph;
         this.mapping = new Map();
         this.vars = new Map([...vars.entries()].map(([name, v]) => [name, new Matrix(v)]));
@@ -54,16 +58,19 @@ export class Algorithm {
     *init() {
         let index = 0;
         for (const e of this.graph) {
-            let name;
-            let children;
-            const vertex = (() => {
+            let name = '';
+            let nodeName = '';
+            let children = [];
+            const convert = (e) => {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
+                    nodeName = e.toString();
                     children = [];
                     return new GraphNodes.Var(e.name);
                 }
                 else if (e instanceof FunctionTree.Operation) {
-                    name = e.symbol;
+                    nodeName = this.funName();
+                    name = `${nodeName} = ${e.toString(e.operands.map((n) => this.mapping.get(n)[1].nodeName))}`;
                     children = e.operands.map((n) => this.mapping.get(n)[1].index);
                     const operands = e.operands.map((n) => this.mapping.get(n)[0]);
                     const fun = algoMapping.get(e.symbol);
@@ -72,12 +79,37 @@ export class Algorithm {
                     }
                     return fun(operands);
                 }
+                else if (e instanceof FunctionTree.Rule) {
+                    const [node, { name: _name, nodeName: _nodeName, index: _index, children: _children }] = this.mapping.get(e.content);
+                    name = e.name + ' = ' + _name.split(' = ')[1];
+                    nodeName = e.name;
+                    index = _index;
+                    children = _children;
+                    return node;
+                }
                 else {
                     throw 'UNSUPPORTED NODE TYPE';
                 }
-            })();
-            yield Algorithm.nodeToUpdate(vertex, { name, index, children });
-            this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
+            };
+            const vertex = convert(e);
+            this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
+            yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)[1]);
+            if (e instanceof FunctionTree.Rule) {
+                const subgraph = (e) => {
+                    if (e instanceof FunctionTree.Operation) {
+                        const inner = e.operands.flatMap((n) => subgraph(n));
+                        inner.push(this.mapping.get(e)[1].index);
+                        return inner;
+                    }
+                    else {
+                        return [this.mapping.get(e)[1].index];
+                    }
+                };
+                yield {
+                    name: nodeName,
+                    content: subgraph(e),
+                };
+            }
             index++;
         }
     }
@@ -131,5 +163,23 @@ export class Algorithm {
             v: e.v,
             df: e.df,
         };
+    }
+    funName() {
+        return this.seq.next().value;
+    }
+    *genFunName() {
+        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode(97 + i));
+        chars.shift(); // remove 'a'
+        const res = [];
+        let i = 0;
+        while (true) {
+            res.push('a');
+            yield res.join('');
+            for (const c of chars) {
+                res[i] = c;
+                yield res.join('');
+            }
+            i++;
+        }
     }
 }

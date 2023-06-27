@@ -1,4 +1,4 @@
-import { ErrorNode, Variable, RuleRef, Operation } from './parser-tree.js';
+import { ErrorNode, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
 import { parserMapping } from "../ad/operations.js";
@@ -22,7 +22,7 @@ class ParserResult {
         return this._graph;
     }
 }
-function parseToTree(input, vrb, ops, onError) {
+function parseToTree(input, vrb, ops, rule, onError) {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     try {
@@ -62,6 +62,11 @@ function parseToTree(input, vrb, ops, onError) {
                             return onError(op.name, `Unknown operation ${op.name}(...)`, operands);
                         }
                         return operation(operands);
+                    case Rule:
+                        const r = v;
+                        dfs(r.content);
+                        const content = pieces.get(r.content.toString());
+                        return rule(r.name, content);
                     case ErrorNode:
                         const err = v;
                         return onError(err.content, err.message, err.children.map((e) => pieces.get(e.toString())));
@@ -73,7 +78,7 @@ function parseToTree(input, vrb, ops, onError) {
         }
     }
     function convert(r) {
-        dfs(r.content);
+        dfs(r);
         rules.set(r.name, pieces.get(r.content.toString()));
     }
     graph.forEach(convert);
@@ -83,7 +88,7 @@ function parseToTree(input, vrb, ops, onError) {
 export const parseFunction = (input) => {
     const errors = [];
     try {
-        const [rules, graph] = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (content, message, children) => {
+        const [rules, graph] = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (name, content) => new FunctionTree.Rule(name, content), (content, message, children) => {
             errors.push([content, message]);
             return new FunctionTree.ErrorNode(content, message, children);
         });

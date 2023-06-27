@@ -38,6 +38,7 @@ function parseToTree<Tree>(
     input: string,
     vrb: (name: string) => Tree,
     ops: Map<string, (args: Tree[]) => Tree>,
+    rule: (name: string, arg: Tree) => Tree,
     onError: (content: string, message: string, args: Tree[]) => Tree
 ): [Tree[], Tree[]] {
     // @ts-ignore
@@ -88,6 +89,12 @@ function parseToTree<Tree>(
                         }
 
                         return operation(operands);
+                    case Rule:
+                        const r = v as Rule;
+                        dfs(r.content);
+                        const content = pieces.get(r.content.toString())!;
+
+                        return rule(r.name, content)
                     case ErrorNode:
                         const err = v as ErrorNode;
 
@@ -102,7 +109,7 @@ function parseToTree<Tree>(
     }
 
     function convert(r: Rule): void {
-        dfs(r.content);
+        dfs(r);
         rules.set(r.name, pieces.get(r.content.toString())!)
     }
 
@@ -120,6 +127,7 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
             input,
             (name) => new FunctionTree.Variable(name),
             parserMapping,
+            (name, content) => new FunctionTree.Rule(name, content),
             (content, message, children) => {
                 errors.push([content, message]);
                 return new FunctionTree.ErrorNode(content, message, children);

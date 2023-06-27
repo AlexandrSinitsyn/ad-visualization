@@ -20,11 +20,13 @@ export enum AlgoStep {
 }
 
 export type ErrorStep = string;
-export type Step = Update | ErrorStep | AlgoStep;
+
+export type Step = Update | AlgoStep | ErrorStep;
 
 interface Info {
     index: number;
     name: string;
+    nodeName: string,
     children: number[];
 }
 
@@ -88,17 +90,20 @@ export class Algorithm {
         let index = 0;
 
         for (const e of this.graph) {
-            let name: string;
-            let children: number[];
+            let name: string = '';
+            let nodeName: string = '';
+            let children: number[] = [];
 
-            const vertex: GraphNodes.Element = (() => {
+            const convert = (e: FunctionTree.Node): GraphNodes.Element => {
                 if (e instanceof FunctionTree.Variable) {
                     name = e.name;
+                    nodeName = e.toString();
                     children = [];
 
                     return new GraphNodes.Var(e.name);
                 } else if (e instanceof FunctionTree.Operation) {
-                    name = e.symbol;
+                    nodeName = this.funName();
+                    name = `${nodeName} = ${e.toString(e.operands.map((n) => this.mapping.get(n)![1].nodeName))}`;
                     children = e.operands.map((n) => this.mapping.get(n)![1].index);
 
                     const operands = e.operands.map((n) => this.mapping.get(n)![0]);
@@ -110,14 +115,25 @@ export class Algorithm {
                     }
 
                     return fun(operands);
+                } else if (e instanceof FunctionTree.Rule) {
+                    const [node, { name: _name, nodeName: _nodeName, index: _index, children: _children }] = this.mapping.get(e.content)!
+
+                    name = e.name + ' = ' + _name.split(' = ')[1];
+                    nodeName = e.name;
+                    index = _index;
+                    children = _children;
+
+                    return node;
                 } else {
                     throw 'UNSUPPORTED NODE TYPE';
                 }
-            })();
+            }
 
-            yield Algorithm.nodeToUpdate(vertex, {name, index, children});
+            const vertex: GraphNodes.Element = convert(e);
 
-            this.mapping.set(e, [vertex, { name: name, index: index, children: children }]);
+            this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
+
+            yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)![1]);
 
             index++;
         }
@@ -168,7 +184,7 @@ export class Algorithm {
         }
     }
 
-    private static nodeToUpdate(e: GraphNodes.Element, {name, index, children}: Info): Update {
+    private static nodeToUpdate(e: GraphNodes.Element, { name, index, children }: Info): Update {
         return {
             index: index,
             name: name,
@@ -176,5 +192,30 @@ export class Algorithm {
             v: e.v,
             df: e.df,
         };
+    }
+
+    private seq = this.genFunName();
+    private funName(): string {
+        return this.seq.next().value;
+    }
+
+    private *genFunName(): Generator<string> {
+        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode(97 + i));
+        chars.shift(); // remove 'a'
+
+        const res = [];
+
+        let i = 0;
+        while (true) {
+            res.push('a');
+            yield res.join('');
+
+            for (const c of chars) {
+                res[i] = c;
+                yield res.join('');
+            }
+
+            i++;
+        }
     }
 }
