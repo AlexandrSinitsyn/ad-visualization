@@ -10,6 +10,7 @@ console.log('parser', (input: string) => parseFunction(input));
 // fixme
 function notify(message: string) {
     alert(message);
+    browser.pause();
 }
 
 function int(element: JQuery<HTMLElement>): number {

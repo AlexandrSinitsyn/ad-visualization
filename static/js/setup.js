@@ -7,6 +7,7 @@ console.log('parser', (input) => parseFunction(input));
 // fixme
 function notify(message) {
     alert(message);
+    browser.pause();
 }
 function int(element) {
     var _a;
