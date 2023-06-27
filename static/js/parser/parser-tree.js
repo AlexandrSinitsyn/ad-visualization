@@ -46,9 +46,8 @@ export class Operation extends Node {
         return `${this.name}(${this.children.map((e) => e.toString()).join(", ")})`;
     }
 }
-export class Rule extends Node {
+export class Rule {
     constructor(name, content) {
-        super();
         this.name = name;
         this.content = content;
     }

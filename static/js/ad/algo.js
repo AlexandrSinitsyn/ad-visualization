@@ -10,9 +10,27 @@ export var AlgoStep;
     AlgoStep[AlgoStep["DIFF"] = 2] = "DIFF";
     AlgoStep[AlgoStep["FINISH"] = 3] = "FINISH";
 })(AlgoStep || (AlgoStep = {}));
-function isMeta(obj) {
-    return typeof obj !== undefined;
-}
+export var TypeChecking;
+(function (TypeChecking) {
+    function isUpdate(step) {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['index', 'name', 'children', 'v', 'df'].map((v) => v in step).reduce((a, b) => a && b);
+    }
+    TypeChecking.isUpdate = isUpdate;
+    function isRuleDef(step) {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['name', 'index', 'content'].map((v) => v in step).reduce((a, b) => a && b);
+    }
+    TypeChecking.isRuleDef = isRuleDef;
+    function isAlgoStep(step) {
+        return step !== undefined && step !== null && typeof step === "number";
+    }
+    TypeChecking.isAlgoStep = isAlgoStep;
+    function isErrorStep(step) {
+        return step !== undefined && step !== null && typeof step === "string";
+    }
+    TypeChecking.isErrorStep = isErrorStep;
+})(TypeChecking || (TypeChecking = {}));
 export class Algorithm {
     constructor(graph, vars, derivatives) {
         this.seq = this.genFunName();
@@ -80,11 +98,11 @@ export class Algorithm {
                     return fun(operands);
                 }
                 else if (e instanceof FunctionTree.Rule) {
-                    const [node, { name: _name, nodeName: _nodeName, index: _index, children: _children }] = this.mapping.get(e.content);
-                    name = e.name + ' = ' + _name.split(' = ')[1];
+                    const node = convert(e.content);
+                    name = e.name + ' = ' + name.split(' = ')[1];
                     nodeName = e.name;
-                    index = _index;
-                    children = _children;
+                    // fixme Rule is always going right after it's content
+                    // index--;
                     return node;
                 }
                 else {
@@ -94,20 +112,25 @@ export class Algorithm {
             const vertex = convert(e);
             this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
             yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)[1]);
+            console.log('yield', e, vertex, index);
             if (e instanceof FunctionTree.Rule) {
                 const subgraph = (e) => {
                     if (e instanceof FunctionTree.Operation) {
-                        const inner = e.operands.flatMap((n) => subgraph(n));
-                        inner.push(this.mapping.get(e)[1].index);
-                        return inner;
+                        return e.operands.flatMap((n) => subgraph(n));
+                    }
+                    else if (e instanceof FunctionTree.Variable) {
+                        return [];
                     }
                     else {
                         return [this.mapping.get(e)[1].index];
                     }
                 };
+                const content = subgraph(e.content);
+                content.push(index);
                 yield {
                     name: nodeName,
-                    content: subgraph(e),
+                    index: index,
+                    content: content,
                 };
             }
             index++;
@@ -168,8 +191,8 @@ export class Algorithm {
         return this.seq.next().value;
     }
     *genFunName() {
-        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode(97 + i));
-        chars.shift(); // remove 'a'
+        const chars = [...Array(26).keys()].map((_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+        chars.shift(); // remove 'A'
         const res = [];
         let i = 0;
         while (true) {

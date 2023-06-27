@@ -1,4 +1,4 @@
-import { ErrorNode, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
+import { ErrorNode, Variable, RuleRef, Operation } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
 import { parserMapping } from "../ad/operations.js";
@@ -39,6 +39,7 @@ function parseToTree(input, vrb, ops, rule, onError) {
     }
     // fixme (hashcode???)
     const pieces = new Map();
+    // name -> [hashCode, Tree]
     const rules = new Map();
     const graph = result[0];
     function dfs(v) {
@@ -52,7 +53,7 @@ function parseToTree(input, vrb, ops, rule, onError) {
                     case Variable:
                         return vrb(v.name);
                     case RuleRef:
-                        return rules.get(v.name);
+                        return rules.get(v.name)[1];
                     case Operation:
                         const op = v;
                         op.children.forEach((e) => dfs(e));
@@ -62,11 +63,6 @@ function parseToTree(input, vrb, ops, rule, onError) {
                             return onError(op.name, `Unknown operation ${op.name}(...)`, operands);
                         }
                         return operation(operands);
-                    case Rule:
-                        const r = v;
-                        dfs(r.content);
-                        const content = pieces.get(r.content.toString());
-                        return rule(r.name, content);
                     case ErrorNode:
                         const err = v;
                         return onError(err.content, err.message, err.children.map((e) => pieces.get(e.toString())));
@@ -74,21 +70,29 @@ function parseToTree(input, vrb, ops, rule, onError) {
                         throw new ParserError("Parsed graph somehow contains a Node which type is not supported");
                 }
             })();
+            console.log('>', v, '\n', pieces, '\n', graph);
+            if (v instanceof RuleRef) {
+                console.log('ref:', v, rules.get(v.name), '\n', pieces.get(rules.get(v.name)[0]));
+                pieces.delete(rules.get(v.name)[0]);
+            }
             pieces.set(str, cur);
         }
     }
     function convert(r) {
-        dfs(r);
-        rules.set(r.name, pieces.get(r.content.toString()));
+        dfs(r.content);
+        const content = pieces.get(r.content.toString());
+        pieces.set(r.content.toString(), rule(r.name, content));
+        rules.set(r.name, [r.content.toString(), pieces.get(r.content.toString())]);
+        // console.log(rules, pieces)
     }
     graph.forEach(convert);
-    return [[...rules.values()], [...pieces.values()]];
+    return { rules: [...rules.values()].map(([_, tree]) => tree), graph: [...pieces.values()] };
 }
 // fixme
 export const parseFunction = (input) => {
     const errors = [];
     try {
-        const [rules, graph] = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (name, content) => new FunctionTree.Rule(name, content), (content, message, children) => {
+        const { rules, graph } = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (name, content) => new FunctionTree.Rule(name, content), (content, message, children) => {
             errors.push([content, message]);
             return new FunctionTree.ErrorNode(content, message, children);
         });

@@ -1,4 +1,4 @@
-import  { Algorithm, AlgoStep, Update, ErrorStep, Step } from "./algo.js";
+import { Algorithm, AlgoStep, Update, RuleDef, ErrorStep, Step, TypeChecking } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 import { BrowserInitializationError } from "../util/errors.js";
 
@@ -90,7 +90,7 @@ class ExpressionManager {
 
             const val = nxt.value;
 
-            if (typeof val !== "number"/*typeof AlgoStep*/) {
+            if (!TypeChecking.isAlgoStep(val)) {
                 this.updates.push(nxt.value);
                 continue;
             }
@@ -125,18 +125,22 @@ class ExpressionManager {
         this.init();
     }
 
-    // fixme
     public errorsFound(frame: Frame): ErrorStep | undefined {
-        return this.updates.slice(0, frame).find((e) => typeof e === "string") as (ErrorStep | undefined);
+        return this.updates.slice(0, frame).find((e) => TypeChecking.isErrorStep(e)) as (ErrorStep | undefined);
     }
 
-    private apply(frame: Frame): Update[] {
-        const res: Update[] = [];
+    private apply(frame: Frame): (Update | RuleDef)[] {
+        const res: (Update | RuleDef)[] = [];
 
         for (const step of this.updates.slice(0, frame)) {
+            if (TypeChecking.isRuleDef(step)) {
+                res.push(step);
+                continue;
+            }
+
             const u = step as Update;
 
-            const prev = res.find((e) => e.index === u.index);
+            const prev = res.find((e) => TypeChecking.isUpdate(e) && e.index === u.index) as Update;
 
             if (!prev) {
                 res.push(u);
@@ -157,10 +161,25 @@ class ExpressionManager {
         res += "rankdir=RL;\n";
         res += "node [shape=Mrecord, color=blue];\n";
 
-        for (const {index, name, children, v, df} of this.apply(frame)) {
-            res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"];\n`;
+        const clusters: RuleDef[] = [];
 
-            res += children.map((c) => `${index} -> ${c};`).join('\n');
+        for (const f of this.apply(frame)) {
+            if (TypeChecking.isRuleDef(f)) {
+                clusters.push(f);
+            } else {
+                const { index, name, children, v, df } = f;
+
+                res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"];\n`;
+                res += children.map((c) => `${index} -> ${c};`).join('\n');
+                res += '\n';
+            }
+        }
+
+        for (const c of clusters) {
+            res += `subgraph cluster_${c.name} {`;
+            res += c.content.join('\n');
+            res += `\nlabel="${c.name}"`;
+            res += `}\n`;
         }
 
         res += "}";

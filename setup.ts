@@ -195,7 +195,7 @@ $(document).ready(function () {
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
     });
 
-    $funInput.text('f = x + y * tanh(x)');
+    $funInput.text('f = x + y\ng = f(x) * y');//'f = x + y * tanh(x)');
 
     $funInput.trigger('keyup');
 });

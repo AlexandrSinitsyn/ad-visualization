@@ -70,12 +70,11 @@ export class Operation extends Node {
     }
 }
 
-export class Rule extends Node {
+export class Rule {
     public readonly name: string;
     public readonly content: Node;
 
     public constructor(name: string, content: Node) {
-        super();
         this.name = name;
         this.content = content;
     }
