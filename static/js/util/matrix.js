@@ -23,12 +23,12 @@ export class Matrix {
         return this.apply((i, j, e) => e + other.get(i, j));
     }
     mul(other) {
-        other.sizeCheck(([w, _]) => w == this.size()[1], `${this.size()[1]}, any`);
+        other.sizeCheck(s => s[0] == this.size()[1], `${this.size()[1]}, any`);
         if (other.isZero()) {
             return new ZeroMatrix();
         }
         const scalar = (a, b) => a.reduce((t, c, i) => t + c * b[i], 0);
-        return Matrix.gen(...this.size()).apply((i, j, _) => scalar(this.row(i), other.col(j)));
+        return Matrix.gen(this.size()[0], other.size()[1]).apply((i, j, _) => scalar(this.row(i), other.col(j)));
     }
     adamar(other) {
         other.equalSizeCheck(this);
@@ -38,14 +38,13 @@ export class Matrix {
         return this.apply((i, j, e) => e * other.get(i, j));
     }
     transpose() {
-        return Matrix.gen(...this.size()).apply((i, j, _) => this.get(j, i));
+        return Matrix.gen(this.size()[1], this.size()[0]).apply((i, j, _) => this.get(j, i));
     }
     toString() {
         return this.data.map((row) => row.map(it => Number.isInteger(it) ? it : it.toFixed(3)).join(' ')).join('\\n');
     }
     equalSizeCheck(expected) {
-        const [r, c] = expected.size();
-        this.sizeCheck(([w, h]) => w === r && h === c, expected.size().toString());
+        return this.sizeCheck(s => s[0] == expected.size()[0] && s[1] == expected.size()[1], expected.size().toString());
     }
     sizeCheck(checker, expectedSize) {
         if (!checker(this.size())) {

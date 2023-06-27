@@ -148,14 +148,16 @@ const $derivatives = $('.derivatives').find('.content');
 
 // setup variables-input
 $(document).ready(function () {
-    browser.onAcceptDerivative((name: string, [rows, cols]: [number, number]) => {
+    browser.onAcceptDerivative((...args: [string, [number, number]][]) => {
         $derivatives.children('.var').remove();
 
-        const $new = newMatrix($derivatives, name, (v) => browser.updateDerivative(name, v), [rows, cols]);
+        for (const [name, [rows, cols]] of args) {
+            const $new = newMatrix($derivatives, name, (v) => browser.updateDerivative(name, v), [rows, cols]);
 
-        const $name = $new.find('.variable-name > .marker');
+            const $name = $new.find('.variable-name > .marker');
 
-        $name.text(name);
+            $name.text(name);
+        }
     })
 });
 
@@ -198,7 +200,7 @@ $(document).ready(function () {
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
     });
 
-    $funInput.text('f = x + y\ng = f(x) * y');//'f = x + y * tanh(x)');
+    $funInput.text('f = x + y * tanh(x)\ng = x + f(x) * f(x)');
 
     $funInput.trigger('keyup');
 });

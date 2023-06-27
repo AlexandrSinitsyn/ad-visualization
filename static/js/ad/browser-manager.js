@@ -73,7 +73,7 @@ class ExpressionManager {
         this.vars = vars;
         this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
         this.init();
-        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
+        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
     }
     updateDerivative(derivatives) {
         this.derivatives = derivatives;
@@ -251,7 +251,7 @@ export class BrowserManager {
     updateValue(name, v) {
         this.vars.set(name, v);
         const derivatives = this.graphDrawer.updateVars(this.vars);
-        derivatives.map(([name, [rows, cols]]) => this.derivativeAcceptor(name, [rows, cols]));
+        this.derivativeAcceptor(...derivatives);
     }
     updateDerivative(name, v) {
         this.derivatives.set(name, v);

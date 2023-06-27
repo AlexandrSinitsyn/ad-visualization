@@ -96,12 +96,11 @@ export namespace FunctionTree {
         }
     }
 
-    export class Rule /* named expression */ extends Node {
+    export class Rule /* named expression */ implements Node {
         public readonly name: string;
         public readonly content: Node;
 
         public constructor(name: string, content: Node) {
-            super(undefined);
             this.name = name;
             this.content = content;
         }

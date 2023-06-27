@@ -1,12 +1,6 @@
 export var FunctionTree;
 (function (FunctionTree) {
-    class Node {
-        constructor(priority) {
-            this.priority = priority;
-        }
-    }
-    FunctionTree.Node = Node;
-    class Element extends Node {
+    class Element {
         arrangeByDepth(depth) {
             return new Map([[depth, [this]]]);
         }
@@ -16,7 +10,7 @@ export var FunctionTree;
     }
     class Variable extends Element {
         constructor(name) {
-            super(undefined);
+            super();
             this.name = name;
         }
         toString() {
@@ -36,12 +30,12 @@ export var FunctionTree;
         Priority[Priority["ADD"] = 0] = "ADD";
         Priority[Priority["MUL"] = 1] = "MUL";
     })(Priority = FunctionTree.Priority || (FunctionTree.Priority = {}));
-    class Operation extends Node {
+    class Operation {
         constructor(symbol, type, operands, priority = undefined) {
-            super(priority);
             this.symbol = symbol;
             this.type = type;
             this.operands = operands;
+            this.priority = priority;
         }
         arrangeByDepth(depth) {
             return this.operands.map((n) => n.arrangeByDepth(depth + 1)).reduce((t, c) => {
@@ -77,9 +71,8 @@ export var FunctionTree;
         }
     }
     FunctionTree.Operation = Operation;
-    class Rule /* named expression *//* named expression */  extends Node {
+    class Rule /* named expression */ {
         constructor(name, content) {
-            super(undefined);
             this.name = name;
             this.content = content;
         }

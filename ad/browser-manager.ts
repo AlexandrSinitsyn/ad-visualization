@@ -115,7 +115,7 @@ class ExpressionManager {
 
         this.init();
 
-        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
+        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
     }
 
     public updateDerivative(derivatives: Map<string, number[][]>) {
@@ -264,7 +264,7 @@ class GraphDrawer {
 export class BrowserManager {
     private player: Player | undefined;
     private boundPlayer!: (frame: Frame, result: true | string) => void;
-    private derivativeAcceptor!: (name: string, [rows, cols]: [number, number]) => void;
+    private derivativeAcceptor!: (...[name, [rows, cols]]: [string, [number, number]][]) => void;
     private graphDrawer: GraphDrawer;
     private isOn: boolean;
 
@@ -351,7 +351,7 @@ export class BrowserManager {
 
         const derivatives = this.graphDrawer.updateVars(this.vars);
 
-        derivatives.map(([name, [rows, cols]]) => this.derivativeAcceptor(name, [rows, cols]));
+        this.derivativeAcceptor(...derivatives);
     }
 
     public updateDerivative(name: string, v: number[][]) {
@@ -360,7 +360,7 @@ export class BrowserManager {
         this.graphDrawer.updateDerivative(this.derivatives);
     }
 
-    public onAcceptDerivative(acceptor: (name: string, [rows, cols]: [number, number]) => void) {
+    public onAcceptDerivative(acceptor: (...[name, [rows, cols]]: [string, [number, number]][]) => void) {
         this.derivativeAcceptor = acceptor;
     }
 }
