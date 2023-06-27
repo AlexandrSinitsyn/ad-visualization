@@ -30,10 +30,16 @@ export var GraphNodes;
     class Operation extends Element {
         constructor(children) {
             super();
-            this._children = children;
+            this._children = children.map((x) => [x, '']);
         }
         get children() {
-            return this._children;
+            return this._children.map(([x, _]) => x);
+        }
+        get symbolicDiffs() {
+            return this._children.map(([_, x]) => x);
+        }
+        set symbolicDiffs(sdfs) {
+            this._children = this._children.map(([v, _], i) => [v, sdfs[i]]);
         }
         eval() {
             this.v = this.calc();

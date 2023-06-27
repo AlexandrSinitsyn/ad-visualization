@@ -12,7 +12,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
                  calc: (...operands: GraphNodes.Element[]) => Matrix,
                  toTex: (...operands: string[]) => string,
                  diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void,
-                 symbolicDiff: (sdf: string, ...operands: [GraphNodes.Element, string][]) => void,
+                 symbolicDiff: (sdf: string, ...operands: [GraphNodes.Element, string][]) => string[],
                  priority: FunctionTree.Priority | undefined = undefined): true {
     const ParserOp = class ParserOp extends FunctionTree.Operation {
         constructor(operands: FunctionTree.Node[]) {
@@ -39,7 +39,10 @@ function factory(symbol: string, type: FunctionTree.OperationType,
         }
 
         symbolicDiff(operands: [GraphNodes.Element, string][]): void {
-            symbolicDiff(this.symbDf, ...operands);
+            const symbs = symbolicDiff(this.symbDf, ...operands);
+
+            this.children.forEach((c, i) => c.symbDf += symbs[i]);
+            this.symbolicDiffs = this.symbolicDiffs.map((_, i) => symbs[i]);
         }
     }
 
@@ -58,10 +61,7 @@ const Plus = factory(
         a.df = a.df.add(df);
         b.df = b.df.add(df);
     },
-    (sdf, [a, $a], [b, $b]) => {
-        a.symbDf = sdf;
-        b.symbDf = sdf;
-    },
+    (sdf, [a, $a], [b, $b]) => [sdf, sdf],
     FunctionTree.Priority.ADD
 );
 
@@ -70,7 +70,7 @@ const Add = factory(
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
     (...args) => `add\\left(${args.join(', ')}\\right)`,
     (df, ...args) => args.forEach((e) => e.df = e.df.add(df)),
-    (sdf, ...operands) => operands.map(([e, $e]) => e.symbDf = sdf),
+    (sdf, ...operands) => operands.map(([e, $e]) => sdf),
 );
 
 const Tanh = factory(
@@ -78,7 +78,7 @@ const Tanh = factory(
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
     (x) => `\\tanh\\left(${x}\\right)`,
     (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)),
-    (sdf, [x, $x]) => x.symbDf = `${sdf} / (1 - ${$x} * ${$x})` // [`\\dfrac{df}{1 - ${x} * ${x}}`]
+    (sdf, [x, $x]) => [`${sdf} / (1 - ${$x} * ${$x})`] // [`\\dfrac{df}{1 - ${x} * ${x}}`]
 );
 
 const Mul = factory(
@@ -89,10 +89,7 @@ const Mul = factory(
         a.df = a.df.add(df.mul(b.v.transpose()));
         b.df = b.df.add(a.v.transpose().mul(df));
     },
-    (sdf, [a, $a], [b, $b]) => {
-        a.symbDf = `${sdf} * ${$b}^T`;
-        b.symbDf = `${$a}^T * ${sdf}`;
-    },
+    (sdf, [a, $a], [b, $b]) => [`${sdf} * ${$b}^T`, `${$a}^T * ${sdf}`],
     FunctionTree.Priority.MUL
 );
 

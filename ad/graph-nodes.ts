@@ -43,15 +43,23 @@ export namespace GraphNodes {
     }
 
     export abstract class Operation extends Element {
-        private readonly _children: Element[];
+        private _children: [Element, string][];
 
         protected constructor(children: Element[]) {
             super();
-            this._children = children;
+            this._children = children.map((x) => [x, '']);
         }
 
         public get children(): Element[] {
-            return this._children;
+            return this._children.map(([x, _]) => x);
+        }
+
+        public get symbolicDiffs(): string[] {
+            return this._children.map(([_, x]) => x);
+        }
+
+        public set symbolicDiffs(sdfs: string[]) {
+            this._children = this._children.map(([v, _], i) => [v, sdfs[i]]);
         }
 
         public eval(): void {

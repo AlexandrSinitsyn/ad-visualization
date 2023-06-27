@@ -151,12 +151,12 @@ export class Algorithm {
     *backwards() {
         for (const [e, info] of [...this.mapping.values()].sort(([, { index: i1 }], [, { index: i2 }]) => i2 - i1)) {
             e.symbolicDiff(info.children.map((i) => this.nodeByIndex(i)).map(([v, { nodeName }]) => [v, nodeName]));
-            for (const c of info.children) {
+            for (let i = 0; i < info.children.length; i++) {
                 yield {
                     from: info.index,
-                    to: c,
+                    to: info.children[i],
                     count: 1,
-                    text: this.nodeByIndex(c)[0].symbDf,
+                    text: e.symbolicDiffs[i],
                 };
             }
         }

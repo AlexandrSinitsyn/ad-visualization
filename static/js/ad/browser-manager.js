@@ -145,8 +145,7 @@ class ExpressionManager {
             res += `\nlabel="${c.name}"`;
             res += `}\n`;
         }
-        res += "}";
-        console.log(this.updates);
+        res += '}';
         return res;
     }
 }
