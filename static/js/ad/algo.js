@@ -6,9 +6,10 @@ import { algoMapping } from "./operations.js";
 export var AlgoStep;
 (function (AlgoStep) {
     AlgoStep[AlgoStep["INIT"] = 0] = "INIT";
-    AlgoStep[AlgoStep["CALC"] = 1] = "CALC";
-    AlgoStep[AlgoStep["DIFF"] = 2] = "DIFF";
-    AlgoStep[AlgoStep["FINISH"] = 3] = "FINISH";
+    AlgoStep[AlgoStep["BACKWARDS"] = 1] = "BACKWARDS";
+    AlgoStep[AlgoStep["CALC"] = 2] = "CALC";
+    AlgoStep[AlgoStep["DIFF"] = 3] = "DIFF";
+    AlgoStep[AlgoStep["FINISH"] = 4] = "FINISH";
 })(AlgoStep || (AlgoStep = {}));
 export var TypeChecking;
 (function (TypeChecking) {
@@ -22,6 +23,11 @@ export var TypeChecking;
             ['name', 'index', 'content'].map((v) => v in step).reduce((a, b) => a && b);
     }
     TypeChecking.isRuleDef = isRuleDef;
+    function isArrow(step) {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['from', 'to', 'count', 'text'].map((v) => v in step).reduce((a, b) => a && b);
+    }
+    TypeChecking.isArrow = isArrow;
     function isAlgoStep(step) {
         return step !== undefined && step !== null && typeof step === "number";
     }
@@ -64,6 +70,8 @@ export class Algorithm {
     *step() {
         yield AlgoStep.INIT;
         yield* this.init();
+        yield AlgoStep.BACKWARDS;
+        yield* this.backwards();
         yield AlgoStep.CALC;
         yield* this.calc();
         yield AlgoStep.DIFF;
@@ -110,6 +118,14 @@ export class Algorithm {
             const vertex = convert(e);
             this.mapping.set(e, [vertex, { name: name, nodeName: nodeName, index: index, children: children }]);
             yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)[1]);
+            for (const c of children) {
+                yield {
+                    from: c,
+                    to: index,
+                    count: 1,
+                    text: '',
+                };
+            }
             if (e instanceof FunctionTree.Rule) {
                 // const subgraph = (e: FunctionTree.Node): number[] => {
                 //     if (e instanceof FunctionTree.Operation) {
@@ -130,6 +146,19 @@ export class Algorithm {
                 };
             }
             index++;
+        }
+    }
+    *backwards() {
+        for (const [e, info] of [...this.mapping.values()].sort(([, { index: i1 }], [, { index: i2 }]) => i2 - i1)) {
+            e.symbolicDiff(info.children.map((i) => this.nodeByIndex(i)).map(([v, { nodeName }]) => [v, nodeName]));
+            for (const c of info.children) {
+                yield {
+                    from: info.index,
+                    to: c,
+                    count: 1,
+                    text: this.nodeByIndex(c)[0].symbDf,
+                };
+            }
         }
     }
     *calc() {
@@ -174,6 +203,9 @@ export class Algorithm {
             }
         }
     }
+    nodeByIndex(i) {
+        return [...this.mapping.values()].find(([_, { index }]) => index === i);
+    }
     static nodeToUpdate(e, { name, index, children }) {
         return {
             index: index,
@@ -192,7 +224,7 @@ export class Algorithm {
         const res = [];
         let i = 0;
         while (true) {
-            res.push('a');
+            res.push('A');
             yield res.join('');
             for (const c of chars) {
                 res[i] = c;

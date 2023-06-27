@@ -18,8 +18,17 @@ export interface RuleDef {
     content: number[];
 }
 
+export interface Arrow {
+    from: number;
+    to: number;
+    // fixme
+    count: 1 | number;
+    text: string;
+}
+
 export enum AlgoStep {
     INIT,
+    BACKWARDS,
     CALC,
     DIFF,
     FINISH,
@@ -27,7 +36,7 @@ export enum AlgoStep {
 
 export type ErrorStep = string;
 
-export type Meta = RuleDef;
+export type Meta = RuleDef | Arrow;
 
 export type Step = Update | Meta | AlgoStep | ErrorStep;
 
@@ -40,6 +49,11 @@ export namespace TypeChecking {
     export function isRuleDef(step: Step): step is RuleDef {
         return step !== undefined && step !== null && typeof step === "object" &&
             ['name', 'index', 'content'].map((v) => v in (step as object)).reduce((a, b) => a && b);
+    }
+
+    export function isArrow(step: Step): step is Arrow {
+        return step !== undefined && step !== null && typeof step === "object" &&
+            ['from', 'to', 'count', 'text'].map((v) => v in (step as object)).reduce((a, b) => a && b);
     }
 
     export function isAlgoStep(step: Step): step is AlgoStep {
@@ -98,6 +112,10 @@ export class Algorithm {
         yield AlgoStep.INIT;
 
         yield* this.init();
+
+        yield AlgoStep.BACKWARDS;
+
+        yield *this.backwards();
 
         yield AlgoStep.CALC;
 
@@ -161,6 +179,15 @@ export class Algorithm {
 
             yield Algorithm.nodeToUpdate(vertex, this.mapping.get(e)![1]);
 
+            for (const c of children) {
+                yield {
+                    from: c,
+                    to: index,
+                    count: 1,
+                    text: '',
+                }
+            }
+
             if (e instanceof FunctionTree.Rule) {
                 // const subgraph = (e: FunctionTree.Node): number[] => {
                 //     if (e instanceof FunctionTree.Operation) {
@@ -183,6 +210,21 @@ export class Algorithm {
             }
 
             index++;
+        }
+    }
+
+    private *backwards(): Generator<Step> {
+        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
+            e.symbolicDiff(info.children.map((i) => this.nodeByIndex(i)).map(([v, { nodeName }]) => [v, nodeName]));
+
+            for (const c of info.children) {
+                yield {
+                    from: info.index,
+                    to: c,
+                    count: 1,
+                    text: this.nodeByIndex(c)[0].symbDf,
+                };
+            }
         }
     }
 
@@ -231,6 +273,10 @@ export class Algorithm {
         }
     }
 
+    private nodeByIndex(i: number): [GraphNodes.Element, Info] {
+        return [...this.mapping.values()].find(([_, { index }]) => index === i)!;
+    }
+
     private static nodeToUpdate(e: GraphNodes.Element, { name, index, children }: Info): Update {
         return {
             index: index,
@@ -254,7 +300,7 @@ export class Algorithm {
 
         let i = 0;
         while (true) {
-            res.push('a');
+            res.push('A');
             yield res.join('');
 
             for (const c of chars) {

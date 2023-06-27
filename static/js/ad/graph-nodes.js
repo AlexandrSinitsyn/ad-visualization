@@ -6,6 +6,7 @@ export var GraphNodes;
         constructor() {
             this.v = new ZeroMatrix();
             this.df = new ZeroMatrix();
+            this.symbDf = '1';
         }
     }
     GraphNodes.Element = Element;
@@ -23,12 +24,16 @@ export var GraphNodes;
             this.df = new ZeroMatrix();
         }
         diff() { }
+        symbolicDiff() { }
     }
     GraphNodes.Var = Var;
     class Operation extends Element {
         constructor(children) {
             super();
-            this.children = children;
+            this._children = children;
+        }
+        get children() {
+            return this._children;
         }
         eval() {
             this.v = this.calc();

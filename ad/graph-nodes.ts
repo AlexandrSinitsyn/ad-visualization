@@ -5,14 +5,17 @@ export namespace GraphNodes {
     export abstract class Element {
         public v: Matrix;
         public df: Matrix;
+        public symbDf: string;
 
         protected constructor() {
             this.v = new ZeroMatrix();
             this.df = new ZeroMatrix();
+            this.symbDf = '1';
         }
 
         public abstract eval(): void;
         public abstract diff(): void;
+        public abstract symbolicDiff(operands: [Element, string][]): void;
     }
 
     export class Var extends Element {
@@ -35,14 +38,20 @@ export namespace GraphNodes {
         }
 
         diff(): void {}
+
+        symbolicDiff(): void {}
     }
 
     export abstract class Operation extends Element {
-        protected readonly children: Element[];
+        private readonly _children: Element[];
 
         protected constructor(children: Element[]) {
             super();
-            this.children = children;
+            this._children = children;
+        }
+
+        public get children(): Element[] {
+            return this._children;
         }
 
         public eval(): void {

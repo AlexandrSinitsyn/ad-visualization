@@ -1,4 +1,4 @@
-import { Algorithm, AlgoStep, Update, RuleDef, ErrorStep, Step, TypeChecking } from "./algo.js";
+import { Algorithm, AlgoStep, Update, Meta, RuleDef, Arrow, ErrorStep, Step, TypeChecking } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 import { BrowserInitializationError } from "../util/errors.js";
 
@@ -97,6 +97,7 @@ class ExpressionManager {
 
             switch (val as AlgoStep) {
                 case AlgoStep.INIT:
+                case AlgoStep.BACKWARDS:
                 case AlgoStep.CALC:
                 case AlgoStep.DIFF:
                 case AlgoStep.FINISH:
@@ -129,12 +130,27 @@ class ExpressionManager {
         return this.updates.slice(0, frame).find((e) => TypeChecking.isErrorStep(e)) as (ErrorStep | undefined);
     }
 
-    private apply(frame: Frame): (Update | RuleDef)[] {
-        const res: (Update | RuleDef)[] = [];
+    private apply(frame: Frame): (Update | Meta)[] {
+        const res: (Update | Meta)[] = [];
 
         for (const step of this.updates.slice(0, frame)) {
             if (TypeChecking.isRuleDef(step)) {
-                res.push(step);
+                res.push({ ...step })
+                continue;
+            } else if (TypeChecking.isArrow(step)) {
+                const a = step as Arrow;
+
+                const prev = res.find((e) => TypeChecking.isArrow(e) &&
+                    e.from === a.to && e.to === a.from) as Arrow;
+
+                if (!prev) {
+                    res.push({ ...a });
+                    continue;
+                }
+
+                prev.from = a.from;
+                prev.to = a.to;
+                prev.text = a.text;
                 continue;
             }
 
@@ -143,7 +159,7 @@ class ExpressionManager {
             const prev = res.find((e) => TypeChecking.isUpdate(e) && e.index === u.index) as Update;
 
             if (!prev) {
-                res.push(u);
+                res.push({ ...u });
                 continue;
             }
 
@@ -158,20 +174,26 @@ class ExpressionManager {
     public toString(frame: Frame) {
         let res = "digraph {\n";
 
-        res += "rankdir=RL;\n";
-        res += "node [shape=Mrecord, color=blue];\n";
+        res += `
+        // graph [layout = fdp]
+        rankdir=LR;
+        node [shape=Mrecord, color=blue];
+        splines="compound";
+        pack=false;
+        `;
 
         const clusters: RuleDef[] = [];
 
         for (const f of this.apply(frame)) {
             if (TypeChecking.isRuleDef(f)) {
                 clusters.push(f);
+            } else if (TypeChecking.isArrow(f)) {
+                res += `${f.from} -> ${f.to} [label="${f.text}"]`;
             } else {
                 const { index, name, children, v, df } = f;
 
-                res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"];\n`;
-                res += children.map((c) => `${index} -> ${c};`).join('\n');
-                res += '\n';
+                res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"; constraint=false];\n`;
+                // res += children.map((c) => `${index} -> ${c};`).join('\n');
             }
         }
 
@@ -182,7 +204,7 @@ class ExpressionManager {
             res += `}\n`;
         }
 
-        res += "}";
+        res += '}';
 
         return res;
     }

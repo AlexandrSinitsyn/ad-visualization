@@ -9,16 +9,17 @@ export const algoMapping: Map<string, (args: GraphNodes.Element[]) => GraphNodes
 export const functions: Map<string, FunctionTree.OperationType> = new Map();
 
 function factory(symbol: string, type: FunctionTree.OperationType,
-                 toTex: (...operands: string[]) => string,
                  calc: (...operands: GraphNodes.Element[]) => Matrix,
+                 toTex: (...operands: string[]) => string,
                  diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void,
+                 symbolicDiff: (sdf: string, ...operands: [GraphNodes.Element, string][]) => void,
                  priority: FunctionTree.Priority | undefined = undefined): true {
     const ParserOp = class ParserOp extends FunctionTree.Operation {
         constructor(operands: FunctionTree.Node[]) {
             super(symbol, type, operands, priority);
         }
 
-        protected toTexImpl(...children: string[]): string {
+        toTexImpl(...children: string[]): string {
             return toTex(...children);
         }
     }
@@ -28,13 +29,17 @@ function factory(symbol: string, type: FunctionTree.OperationType,
             super(operands);
         }
 
-        protected calc(): Matrix {
+        calc(): Matrix {
             return calc(...this.children);
         }
 
         diff(): void {
             this.children.forEach(it => it.df = it.v.apply(() => 0))
             diff(this.df, ...this.children);
+        }
+
+        symbolicDiff(operands: [GraphNodes.Element, string][]): void {
+            symbolicDiff(this.symbDf, ...operands);
         }
     }
 
@@ -47,47 +52,62 @@ function factory(symbol: string, type: FunctionTree.OperationType,
 
 const Plus = factory(
     '+', FunctionTree.OperationType.INFIX,
-    (a, b) => `${a} + ${b}`,
     (a, b) => a.v.add(b.v),
+    (a, b) => `${a} + ${b}`,
     (df, a, b) => {
         a.df = a.df.add(df);
         b.df = b.df.add(df);
+    },
+    (sdf, [a, $a], [b, $b]) => {
+        a.symbDf = sdf;
+        b.symbDf = sdf;
     },
     FunctionTree.Priority.ADD
 );
 
 const Add = factory(
     'add', FunctionTree.OperationType.FUNCTION,
-    (...args) => `add\\left(${args.join(', ')}\\right)`,
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
-    (df, ...args) => args.forEach((e) => e.df = e.df.add(df))
+    (...args) => `add\\left(${args.join(', ')}\\right)`,
+    (df, ...args) => args.forEach((e) => e.df = e.df.add(df)),
+    (sdf, ...operands) => operands.map(([e, $e]) => e.symbDf = sdf),
 );
 
 const Tanh = factory(
     'tanh', FunctionTree.OperationType.FUNCTION,
-    (x) => `\\tanh\\left(${x}\\right)`,
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
-    (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2))
+    (x) => `\\tanh\\left(${x}\\right)`,
+    (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)),
+    (sdf, [x, $x]) => x.symbDf = `${sdf} / (1 - ${$x} * ${$x})` // [`\\dfrac{df}{1 - ${x} * ${x}}`]
 );
 
 const Mul = factory(
     '*', FunctionTree.OperationType.INFIX,
-    (a, b) => `${a} * ${b}`,
     (a, b) => a.v.mul(b.v),
+    (a, b) => `${a} * ${b}`,
     (df, a, b) => {
         a.df = a.df.add(df.mul(b.v.transpose()));
         b.df = b.df.add(a.v.transpose().mul(df));
+    },
+    (sdf, [a, $a], [b, $b]) => {
+        a.symbDf = `${sdf} * ${$b}^T`;
+        b.symbDf = `${$a}^T * ${sdf}`;
     },
     FunctionTree.Priority.MUL
 );
 
 const Adamar = factory(
     'had', FunctionTree.OperationType.FUNCTION,
-    (...args) => `had\\left(${args.join(', ')}\\right)`,
     (...args) => args.map((e) => e.v).reduce((a, b) => a.adamar(b)),
+    (...args) => `had\\left(${args.join(', ')}\\right)`,
     (df, ...args) => args.forEach((child) => {
         const ms = args.filter((x) => x !== child).map((e) => e.v);
         ms.push(df);
         child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)))
+    }),
+    (sdf, ...operands) => [...Array(operands.length).keys()].map((i) => {
+        const row = operands.map(([v, $v]) => $v);
+        row[i] = sdf;
+        return 'had(' + row.join(', ') + ')';
     })
 );
