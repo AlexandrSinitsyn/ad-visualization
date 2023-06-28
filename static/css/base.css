@@ -41,13 +41,49 @@ main::-webkit-scrollbar {
 }
 
 main > .function-show {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr;
+    grid-column-gap: 2rem;
+    grid-template-areas:
+            "hint function-show function-error";
+}
+
+main > .function-show > .hint {
+    grid-area: hint;
+}
+
+main > .function-show > #function-show {
+    grid-area: function-show;
+}
+
+main > .function-show > #function-error {
+    grid-area: function-error;
 }
 
 main > .function-show > * * {
+    text-align: center;
     font-size: 16px;
+}
+
+main > .function-show > .hint {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    align-items: center;
+}
+
+main > .function-show > .hint > * {
+    text-align: center;
+}
+
+main > .function-show > #function-error {
+    color: red;
+    align-self: center;
+}
+
+main > .player {
+    width: 100%;
+    margin: 0.25rem 0;
 }
 
 main > #graph {
