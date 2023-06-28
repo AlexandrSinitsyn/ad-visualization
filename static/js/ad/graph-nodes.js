@@ -36,7 +36,6 @@ export var GraphNodes;
         get children() {
             return this._children.map(([x, _]) => x);
         }
-        // @ts-ignore
         get symbolicDiffs() {
             return this._children.map(([_, x]) => x);
         }

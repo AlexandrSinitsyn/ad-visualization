@@ -37,7 +37,7 @@ function factory(symbol, type, calc, toTex, diff, symbolicDiff, priority = undef
         }
         symbolicDiff(childrenNames) {
             this.symbolicDiffs = childrenNames.map((x) => SVar(x));
-            const symbs = symbolicDiff(this.symbDf, ...this.symbolicDiffs);
+            const symbs = symbolicDiff(this.symbDf, ...this.symbolicDiffs).map((e) => e.simplify());
             this.children.forEach((c, i) => c.symbDf = c.symbDf instanceof SymbolicDerivatives.Empty ? symbs[i] : SAdd(c.symbDf, symbs[i]));
             this.symbolicDiffs = this.symbolicDiffs.map((_, i) => symbs[i]);
         }
@@ -62,8 +62,8 @@ const Adamar = factory('had', FunctionTree.OperationType.FUNCTION, (...args) => 
     ms.push(df);
     child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)));
 }), (sdf, ...operands) => [...Array(operands.length).keys()].map((i) => {
-    const row = operands;
+    const row = [...operands];
     row[i] = sdf;
-    // return SAOp('had')(...operands);
-    return row.reduce((a, b) => SAOp('had')(a, b));
+    return SAOp('had')(...row);
+    // return row.reduce((a, b) => SAOp('had')(a, b));
 }));

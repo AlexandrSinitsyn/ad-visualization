@@ -70,21 +70,38 @@ export namespace SymbolicDerivatives {
         }
     }
 
-    abstract class Operation<T extends [Node] | [Node, Node] | Node[]> implements Node {
+    abstract class AbstractOperation<T extends [Node] | [Node, Node] | Node[]> implements Node {
         public readonly name: string;
         public readonly operands: T;
         private readonly _priority: PriorityLevel;
-        private readonly assoc: [boolean, boolean];
 
-        protected constructor(name: string, operands: T, priority: PriorityLevel, assoc: [boolean, boolean] = [true, true]) {
+        protected constructor(name: string, operands: T, priority: PriorityLevel) {
             this.name = name;
             this.operands = operands;
             this._priority = priority;
-            this.assoc = assoc;
         }
 
         get priority(): PriorityLevel {
             return this._priority;
+        }
+
+        abstract eq(other: Node): boolean;
+
+        abstract simplify(): Node;
+
+        toString(): string {
+            return this.toStringImpl(...this.operands.map((e) => e.toString()));
+        }
+
+        protected abstract toStringImpl(...operands: string[]): string;
+    }
+
+    abstract class Operation<T extends [Node] | [Node, Node]> extends AbstractOperation<T> {
+        private readonly assoc: [boolean, boolean];
+
+        protected constructor(name: string, operands: T, priority: PriorityLevel, assoc: [boolean, boolean] = [true, true]) {
+            super(name, operands, priority);
+            this.assoc = assoc;
         }
 
         eq(other: Node): boolean {
@@ -102,35 +119,7 @@ export namespace SymbolicDerivatives {
             return (a.eq($a) && b.eq($b)) || (a.eq($b) && b.eq($a));
         }
 
-        public simplify(): Node {
-            // switch (this.operands.length) {
-            //     case 1:
-            //         const [x] = this.operands;
-            //         return x instanceof Empty ? x : this.simplifyImpl();
-            //     case 2:
-            //         const [a, b] = this.operands;
-            //
-            //         if (a instanceof Empty) {
-            //             return b!.simplify();
-            //         } else if (b instanceof Empty) {
-            //             return a.simplify();
-            //         }
-            //
-            //         return this.simplifyImpl();
-            //     default:
-            //
-            // }
-
-            // const args = this.operands.filter((v) => !(v instanceof Empty));
-            //
-            // if (args.length === this.operands.length) {
-            //     return this.simplifyImpl();
-            // }
-            //
-            // if (args.length === 1) {
-            //     return args[0].simplify();
-            // }
-
+        simplify(): Node {
             const [a, b] = this.operands;
 
             if (!b) {
@@ -152,31 +141,65 @@ export namespace SymbolicDerivatives {
 
         protected abstract simplifyImpl(): Node;
 
-        public toString(): string {
-            switch (this.operands.length) {
-                case 1:
-                    const [x] = this.operands;
-                    return this.toStringImpl(x.priority < PriorityLevel.FUNCTION ? `(${x.toString()})` : x.toString());
-                case 2:
-                    const [a, b] = this.operands;
+        toString(): string {
+            const [a, b] = this.operands;
 
-                    const lessAndNotVar = (n: Node, isLeft: boolean) => n.priority < PriorityLevel.ELEMENT && (this.priority > n.priority ||
-                        (!(isLeft ? this.assoc[0] : this.assoc[1]) && this.name === n.name));
+            const lessAndNotVar = (n: Node, isLeft: boolean) => n.priority < PriorityLevel.ELEMENT && (this.priority > n.priority ||
+                (!(isLeft ? this.assoc[0] : this.assoc[1]) && this.name === n.name));
 
-                    if (!b) {
-                        return this.toStringImpl(lessAndNotVar(a, true) ? `(${a.toString()})` : a.toString());
-                    }
-
-                    return this.toStringImpl(
-                        lessAndNotVar(a, true) ? `(${a.toString()})` : a.toString(),
-                        lessAndNotVar(b, false) ? `(${b.toString()})` : b.toString(),
-                    );
-                default:
-                    return this.toStringImpl(...this.operands.map((e) => e.toString()));
+            if (!b) {
+                return this.toStringImpl(lessAndNotVar(a, true) ? `(${a.toString()})` : a.toString());
             }
+
+            return this.toStringImpl(
+                lessAndNotVar(a, true) ? `(${a.toString()})` : a.toString(),
+                lessAndNotVar(b, false) ? `(${b.toString()})` : b.toString(),
+            );
+        }
+    }
+
+    export class NamedOperation extends AbstractOperation<Node[]> {
+        public constructor(name: string, operands: Node[]) {
+            super(name, operands, PriorityLevel.FUNCTION);
         }
 
-        protected abstract toStringImpl(...operands: string[]): string;
+        eq(other: Node): boolean {
+            if (!(other instanceof NamedOperation && other.name === this.name && other.operands.length === this.operands.length)) {
+                return false;
+            }
+
+            const used = new Array(other.operands.length).map((_) => false);
+
+            let res = true;
+
+            this.operands.forEach((v) => {
+                const found = other.operands.map((e, i) => [e, i] as [Node, number]).find(([e, i]) => v.eq(e) && !used[i]);
+
+                if (!found) {
+                    res = false;
+                } else {
+                    used[found[1]] = true;
+                }
+            });
+
+            return used.reduce((a, b) => a && b, res);
+        }
+
+        simplify(): Node {
+            const args = this.operands.filter((v) => !(v instanceof Empty)).flatMap((v) => {
+                if (v instanceof NamedOperation && v.name === this.name) {
+                    return v.operands;
+                }
+
+                return [v];
+            });
+
+            return new NamedOperation(this.name, args);
+        }
+
+        protected toStringImpl(...operands: string[]): string {
+            return this.name + '(' + operands.join(', ') + ')';
+        }
     }
 
     function op<T extends [Node] | [Node, Node]>(
@@ -208,7 +231,7 @@ export namespace SymbolicDerivatives {
     export const Sub = op<[Node, Node]>('sub', PriorityLevel.ADD, (a, b) => `${a} - ${b}`,
         (self, a, b) => a.eq(ZERO) ? Neg(b).simplify() : b.eq(ZERO) ? a : a.eq(b) ? ZERO : self, [false, true]);
     export const Neg = op<[Node]>('neg', PriorityLevel.UNARY, (x) => `-${x}`,
-        (self, x) => x instanceof Const ? Num(-x.value) : self);
+        (self, x) => x instanceof Const ? Num(-x.value) : x instanceof Operation && x.name === 'neg' ? x.operands : self);
     export const Mul = op<[Node, Node]>('mul', PriorityLevel.MUL, (a, b) => `${a} * ${b}`,
         (self, a, b) => {
             if (a.eq(ZERO) || b.eq(ZERO)) {
@@ -229,8 +252,7 @@ export namespace SymbolicDerivatives {
         (self, a, b) => a.eq(ZERO) ? ZERO : a.eq(ONE) ? ONE : b.eq(ZERO) ? ONE : b.eq(ONE) ? a : self, [true, false]);
     export const Tns = op<[Node]>('tns', PriorityLevel.UNARY, (a) => `${a}^T`,
         (self, a) => self);
-    export const AOp = (name: string) => op<[Node, Node]>(name, PriorityLevel.FUNCTION, (...args) => `${name}(${args.join(', ')})`,
-        (self, a, b) => self);
+    export const AOp = (name: string) => (...operands: Node[]) => new NamedOperation(name, operands);
 
     export const Var = (name: string) => new Variable(name);
     export const Num = (value: number) => new Const(value);
