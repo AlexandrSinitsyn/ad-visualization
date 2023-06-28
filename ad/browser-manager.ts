@@ -166,6 +166,7 @@ class ExpressionManager {
             prev.name = u.name
             prev.v = u.v;
             prev.df = u.df;
+            prev.symbolicDf = u.symbolicDf;
         }
 
         return res;
@@ -190,13 +191,13 @@ class ExpressionManager {
             } else if (TypeChecking.isArrow(f)) {
                 res += `${f.from} -> ${f.to} [label="${f.text}"]`;
             } else {
-                const { index, name, nodeName, children, v, df } = f;
+                const { index, name, nodeName, v, df, symbolicDf } = f;
 
                 const matrixSize = v?.isZero() ? '' : `\\n[${v!.size()}]`;
                 const valD = v?.isZero() ? '' : `|{val\\n${v!}|&#916;${nodeName}\\n${df ?? ''}}`;
+                const sdf = symbolicDf === undefined ? '' : `|{${symbolicDf}}`;
 
-                res += `${index} [label="${name}${matrixSize}${valD}"; constraint=false];\n`;
-                // res += children.map((c) => `${index} -> ${c};`).join('\n');
+                res += `${index} [label="${name}${matrixSize}${sdf}${valD}"; constraint=false];\n`;
             }
         }
 

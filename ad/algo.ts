@@ -12,6 +12,7 @@ export interface Update {
     children: number[];
     v: Matrix | undefined;
     df: Matrix | undefined;
+    symbolicDf: string | undefined;
 }
 
 export interface RuleDef {
@@ -228,6 +229,7 @@ export class Algorithm {
                     count: 1,
                     text: (e as GraphNodes.Operation).symbolicDiffs[i].toString(),
                 };
+                yield Algorithm.nodeToUpdate(...this.nodeByIndex(children[i]));
             }
         }
     }
@@ -289,6 +291,7 @@ export class Algorithm {
             children: children,
             v: e.v,
             df: e.df,
+            symbolicDf: e.symbDf instanceof SymbolicDerivatives.Empty ? undefined : e.symbDf.toString(),
         };
     }
 

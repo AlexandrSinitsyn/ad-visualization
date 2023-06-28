@@ -160,6 +160,7 @@ export class Algorithm {
                     count: 1,
                     text: e.symbolicDiffs[i].toString(),
                 };
+                yield Algorithm.nodeToUpdate(...this.nodeByIndex(children[i]));
             }
         }
     }
@@ -216,6 +217,7 @@ export class Algorithm {
             children: children,
             v: e.v,
             df: e.df,
+            symbolicDf: e.symbDf instanceof SymbolicDerivatives.Empty ? undefined : e.symbDf.toString(),
         };
     }
     funName() {
