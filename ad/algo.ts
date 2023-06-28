@@ -1,5 +1,6 @@
 import { FunctionTree } from "./function-tree.js";
 import { GraphNodes } from "./graph-nodes.js";
+import { SymbolicDerivatives } from "./symbolic-derivatives.js";
 import { Matrix, ZeroMatrix } from "../util/matrix.js";
 import { AlgorithmError } from "../util/errors.js";
 import { algoMapping } from "./operations.js";
@@ -214,15 +215,17 @@ export class Algorithm {
     }
 
     private *backwards(): Generator<Step> {
-        for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
-            e.symbolicDiff(info.children.map((i) => this.nodeByIndex(i)).map(([v, { nodeName }]) => [v, nodeName]));
+        this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('d' + nodeName));
 
-            for (let i = 0; i < info.children.length; i++) {
+        for (const [e, { index, children }] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
+            e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName));
+
+            for (let i = 0; i < children.length; i++) {
                 yield {
-                    from: info.index,
-                    to: info.children[i],
+                    from: index,
+                    to: children[i],
                     count: 1,
-                    text: (e as GraphNodes.Operation).symbolicDiffs[i],
+                    text: (e as GraphNodes.Operation).symbolicDiffs[i].toString(),
                 };
             }
         }
