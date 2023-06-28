@@ -65,5 +65,4 @@ const Adamar = factory('had', FunctionTree.OperationType.FUNCTION, (...args) => 
     const row = [...operands];
     row[i] = sdf;
     return SAOp('had')(...row);
-    // return row.reduce((a, b) => SAOp('had')(a, b));
 }));

@@ -74,7 +74,7 @@ class ExpressionManager {
         this.vars = vars;
         this.algo = this.algo.updateAlgo(this.vars, this.derivatives);
         this.init();
-        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
+        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
     }
     updateDerivative(derivatives) {
         this.derivatives = derivatives;
@@ -134,8 +134,10 @@ class ExpressionManager {
                 res += `${f.from} -> ${f.to} [label="${f.text}"]`;
             }
             else {
-                const { index, name, children, v, df } = f;
-                res += `${index} [label="${name}|{val:\\n${v !== null && v !== void 0 ? v : ''}|df:\\n${df !== null && df !== void 0 ? df : ''}}"; constraint=false];\n`;
+                const { index, name, nodeName, children, v, df } = f;
+                const matrixSize = (v === null || v === void 0 ? void 0 : v.isZero()) ? '' : `\\n[${v.size()}]`;
+                const valD = (v === null || v === void 0 ? void 0 : v.isZero()) ? '' : `|{val\\n${v}|&#916;${nodeName}\\n${df !== null && df !== void 0 ? df : ''}}`;
+                res += `${index} [label="${name}${matrixSize}${valD}"; constraint=false];\n`;
                 // res += children.map((c) => `${index} -> ${c};`).join('\n');
             }
         }

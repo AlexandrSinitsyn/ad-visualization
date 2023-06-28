@@ -116,7 +116,7 @@ class ExpressionManager {
 
         this.init();
 
-        return this.algo.getEdges().map(([e, { name }]) => [name, e.v.size()]);
+        return this.algo.getEdges().map(([e, { nodeName }]) => [nodeName, e.v.size()]);
     }
 
     public updateDerivative(derivatives: Map<string, number[][]>) {
@@ -190,9 +190,12 @@ class ExpressionManager {
             } else if (TypeChecking.isArrow(f)) {
                 res += `${f.from} -> ${f.to} [label="${f.text}"]`;
             } else {
-                const { index, name, children, v, df } = f;
+                const { index, name, nodeName, children, v, df } = f;
 
-                res += `${index} [label="${name}|{val:\\n${v ?? ''}|df:\\n${df ?? ''}}"; constraint=false];\n`;
+                const matrixSize = v?.isZero() ? '' : `\\n[${v!.size()}]`;
+                const valD = v?.isZero() ? '' : `|{val\\n${v!}|&#916;${nodeName}\\n${df ?? ''}}`;
+
+                res += `${index} [label="${name}${matrixSize}${valD}"; constraint=false];\n`;
                 // res += children.map((c) => `${index} -> ${c};`).join('\n');
             }
         }

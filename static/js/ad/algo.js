@@ -16,7 +16,7 @@ export var TypeChecking;
 (function (TypeChecking) {
     function isUpdate(step) {
         return step !== undefined && step !== null && typeof step === "object" &&
-            ['index', 'name', 'children', 'v', 'df'].map((v) => v in step).reduce((a, b) => a && b);
+            ['index', 'name', 'nodeName', 'children', 'v', 'df'].map((v) => v in step).reduce((a, b) => a && b);
     }
     TypeChecking.isUpdate = isUpdate;
     function isRuleDef(step) {
@@ -43,8 +43,8 @@ export class Algorithm {
         this.seq = this.genFunName();
         this.graph = graph;
         this.mapping = new Map();
-        this.vars = new Map([...vars.entries()].map(([name, v]) => [name, new Matrix(v)]));
-        this.derivatives = new Map([...derivatives.entries()].map(([name, v]) => [name, new Matrix(v)]));
+        this.vars = new Map([...vars.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
+        this.derivatives = new Map([...derivatives.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
     }
     getEdges() {
         const edgeChecks = new Array(this.graph.length).fill(true);
@@ -150,7 +150,7 @@ export class Algorithm {
         }
     }
     *backwards() {
-        this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('d' + nodeName));
+        this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('&#916;' + nodeName));
         for (const [e, { index, children }] of [...this.mapping.values()].sort(([, { index: i1 }], [, { index: i2 }]) => i2 - i1)) {
             e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName));
             for (let i = 0; i < children.length; i++) {
@@ -186,11 +186,11 @@ export class Algorithm {
         for (const [e, info] of [...this.mapping.values()].sort(([, { index: i1 }], [, { index: i2 }]) => i2 - i1)) {
             try {
                 if (e.df instanceof ZeroMatrix) {
-                    if (!this.derivatives.has(info.name)) {
+                    if (!this.derivatives.has(info.nodeName)) {
                         // noinspection ExceptionCaughtLocallyJS
-                        throw new AlgorithmError(`No derivative provided for "${info.name}"`);
+                        throw new AlgorithmError(`No derivative provided for "${info.nodeName}"`);
                     }
-                    e.df = this.derivatives.get(info.name);
+                    e.df = this.derivatives.get(info.nodeName);
                 }
                 e.diff();
                 yield Algorithm.nodeToUpdate(e, info);
@@ -208,10 +208,11 @@ export class Algorithm {
     nodeByIndex(i) {
         return [...this.mapping.values()].find(([_, { index }]) => index === i);
     }
-    static nodeToUpdate(e, { name, index, children }) {
+    static nodeToUpdate(e, { name, nodeName, index, children }) {
         return {
             index: index,
             name: name,
+            nodeName: nodeName,
             children: children,
             v: e.v,
             df: e.df,

@@ -108,6 +108,7 @@ function parseToTree<Tree>(
     }
 
     function convert(r: Rule): void {
+        if (r.content instanceof Variable) throw new ParserError("Can't declare variable");
         dfs(r.content);
 
         const content = pieces.get(r.content.toString())!;
