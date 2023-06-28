@@ -1,5 +1,7 @@
 # Automatic differentiation visualization
 
+<img alt="icon" src="./static/img/icon.jpg" title="AD visualization" width="100%" height="auto"/>
+
 ## How to use
 
 ### Injection
@@ -11,10 +13,10 @@ You can use it both as a standalone application and as a part of your server. Th
 
 ### Compilation
 
-- This application is written on TypeScript, but browsers allows only JS, so the whole code need to be compiled to JS.
-- **[ NOT IMPLEMENTED YET ]** ~~The same thing is with SCSS which should be compiled to CSS before using~~
+- This application is written on TypeScript, but browsers allows only JS, so the whole code need to be compiled to JS (there is already compiled code in `./static/js`)
+- The same thing is with SCSS which should be compiled to CSS before using
 - Also, you should run to compile `nearley.js` grammar to TS code (and then to JS)
-> nearleyc ./parser/grammar.ne -o ./parser/grammar.ts
+  > nearleyc ./parser/grammar.ne -o ./parser/grammar.ts
 
 ### Requirements
 

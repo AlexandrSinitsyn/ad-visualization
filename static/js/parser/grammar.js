@@ -64,7 +64,7 @@ const grammar = {
         { "name": "component$ebnf$1", "symbols": ["component$ebnf$1", "component$ebnf$1$subexpression$1"], "postprocess": (d) => d[0].concat([d[1]]) },
         { "name": "component", "symbols": [(lexer.has("name") ? { type: "name" } : name), "_", { "literal": "(" }, "_", "add_lvl", "_", "component$ebnf$1", "_", { "literal": ")" }], "postprocess": _(([op, , first, rest,]) => opOr(op, `Unknown function ${op}(...)`, first, ...rest.map((e) => e[1])))
         },
-        { "name": "operand", "symbols": [(lexer.has("name") ? { type: "name" } : name)], "postprocess": _(([n]) => new Variable(n)) },
+        { "name": "operand", "symbols": [(lexer.has("name") ? { type: "name" } : name)], "postprocess": _(([n]) => rules.includes(n) ? new RuleRef(n, []) : new Variable(n)) },
         { "name": "_$ebnf$1", "symbols": [] },
         { "name": "_$ebnf$1", "symbols": ["_$ebnf$1", (lexer.has("ws") ? { type: "ws" } : ws)], "postprocess": (d) => d[0].concat([d[1]]) },
         { "name": "_", "symbols": ["_$ebnf$1"], "postprocess": () => null }

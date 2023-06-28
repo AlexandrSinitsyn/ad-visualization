@@ -6,6 +6,7 @@ export var GraphNodes;
         constructor() {
             this.v = new ZeroMatrix();
             this.df = new ZeroMatrix();
+            this.symbDf = '1';
         }
     }
     GraphNodes.Element = Element;
@@ -23,12 +24,22 @@ export var GraphNodes;
             this.df = new ZeroMatrix();
         }
         diff() { }
+        symbolicDiff() { }
     }
     GraphNodes.Var = Var;
     class Operation extends Element {
         constructor(children) {
             super();
-            this.children = children;
+            this._children = children.map((x) => [x, '']);
+        }
+        get children() {
+            return this._children.map(([x, _]) => x);
+        }
+        get symbolicDiffs() {
+            return this._children.map(([_, x]) => x);
+        }
+        set symbolicDiffs(sdfs) {
+            this._children = this._children.map(([v, _], i) => [v, sdfs[i]]);
         }
         eval() {
             this.v = this.calc();

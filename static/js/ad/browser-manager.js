@@ -59,6 +59,7 @@ class ExpressionManager {
             }
             switch (val) {
                 case AlgoStep.INIT:
+                case AlgoStep.BACKWARDS:
                 case AlgoStep.CALC:
                 case AlgoStep.DIFF:
                 case AlgoStep.FINISH:
@@ -87,13 +88,26 @@ class ExpressionManager {
         const res = [];
         for (const step of this.updates.slice(0, frame)) {
             if (TypeChecking.isRuleDef(step)) {
-                res.push(step);
+                res.push({ ...step });
+                continue;
+            }
+            else if (TypeChecking.isArrow(step)) {
+                const a = step;
+                const prev = res.find((e) => TypeChecking.isArrow(e) &&
+                    e.from === a.to && e.to === a.from);
+                if (!prev) {
+                    res.push({ ...a });
+                    continue;
+                }
+                prev.from = a.from;
+                prev.to = a.to;
+                prev.text = a.text;
                 continue;
             }
             const u = step;
             const prev = res.find((e) => TypeChecking.isUpdate(e) && e.index === u.index);
             if (!prev) {
-                res.push(u);
+                res.push({ ...u });
                 continue;
             }
             prev.name = u.name;
@@ -104,18 +118,25 @@ class ExpressionManager {
     }
     toString(frame) {
         let res = "digraph {\n";
-        res += "rankdir=RL;\n";
-        res += "node [shape=Mrecord, color=blue];\n";
+        res += `
+        // graph [layout = fdp]
+        rankdir=LR;
+        node [shape=Mrecord, color=blue];
+        splines="compound";
+        pack=false;
+        `;
         const clusters = [];
         for (const f of this.apply(frame)) {
             if (TypeChecking.isRuleDef(f)) {
                 clusters.push(f);
             }
+            else if (TypeChecking.isArrow(f)) {
+                res += `${f.from} -> ${f.to} [label="${f.text}"]`;
+            }
             else {
                 const { index, name, children, v, df } = f;
-                res += `${index} [label="${name}|{val:\\n${v !== null && v !== void 0 ? v : ''}|df:\\n${df !== null && df !== void 0 ? df : ''}}"];\n`;
-                res += children.map((c) => `${index} -> ${c};`).join('\n');
-                res += '\n';
+                res += `${index} [label="${name}|{val:\\n${v !== null && v !== void 0 ? v : ''}|df:\\n${df !== null && df !== void 0 ? df : ''}}"; constraint=false];\n`;
+                // res += children.map((c) => `${index} -> ${c};`).join('\n');
             }
         }
         for (const c of clusters) {
@@ -124,7 +145,7 @@ class ExpressionManager {
             res += `\nlabel="${c.name}"`;
             res += `}\n`;
         }
-        res += "}";
+        res += '}';
         return res;
     }
 }

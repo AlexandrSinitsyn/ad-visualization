@@ -83,6 +83,6 @@ component ->
 %}
 
 operand ->
-    %name {% _(([n]) => new Variable(n)) %}
+    %name {% _(([n]) => rules.includes(n) ? new RuleRef(n, []) : new Variable(n)) %}
 
 _ -> %ws:* {% () => null %}
