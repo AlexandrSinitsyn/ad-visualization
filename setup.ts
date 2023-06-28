@@ -172,9 +172,10 @@ $(document).ready(function () {
         const $functionError = $("#function-error");
         if (!expr.isOk()) {
             $functionError.text(expr.error());
-            $functionError.show();
+            // $functionError.show();
         } else {
-            $functionError.hide();
+            // $functionError.hide();
+            $functionError.text('');
         }
 
         const $function = $('#function-show');
@@ -242,3 +243,12 @@ $(document).ready(function () {
         }
     });
 });
+
+export function phantomTextSize(text: string, font: string): number {
+    const $field = $('.frame-update > #textholder');
+
+    $field.text(text);
+    $field.css('font-family', font);
+
+    return $field.innerWidth() ?? 0;
+}

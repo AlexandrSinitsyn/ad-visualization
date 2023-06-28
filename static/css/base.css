@@ -42,10 +42,12 @@ main::-webkit-scrollbar {
 
 main > .function-show {
     display: grid;
+    grid-template-rows: 2fr 1fr;
     grid-template-columns: 1fr 3fr 1fr;
     grid-column-gap: 2rem;
     grid-template-areas:
-            "hint function-show function-error";
+            "hint function-show function-error"
+            "hint frame-update function-error";
 }
 
 main > .function-show > .hint {
@@ -58,6 +60,10 @@ main > .function-show > #function-show {
 
 main > .function-show > #function-error {
     grid-area: function-error;
+}
+
+main > .function-show > .frame-update {
+    grid-area: frame-update;
 }
 
 main > .function-show > * * {
@@ -78,6 +84,15 @@ main > .function-show > .hint > * {
 
 main > .function-show > #function-error {
     color: red;
+    align-self: center;
+}
+
+main > .function-show > .frame-update {
+    height: 100%;
+    padding: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    text-align: center;
     align-self: center;
 }
 
