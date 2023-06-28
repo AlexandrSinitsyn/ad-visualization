@@ -132,7 +132,6 @@ class ExpressionManager {
         `;
         const clusters = [];
         let previousArrow = '';
-        console.log((text, font) => phantomTextSize(text, font));
         const x_char = phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
         const space = phantomTextSize('x', 'TimesNewRoman') /
             phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
@@ -140,7 +139,6 @@ class ExpressionManager {
             const tnr = phantomTextSize(text, 'TimesNewRoman');
             const csm = phantomTextSize(text, 'Comic Sans MS, Comic Sans, cursive');
             const x = Math.ceil((csm - tnr) / 2 * space / x_char);
-            console.log(text, tnr, csm, space, x);
             return '&nbsp;'.repeat(x) + text + '&nbsp;'.repeat(x);
         };
         for (const f of this.apply(frame)) {
@@ -167,7 +165,6 @@ class ExpressionManager {
             res += `}\n`;
         }
         res += '}';
-        console.log(res);
         return res;
     }
 }

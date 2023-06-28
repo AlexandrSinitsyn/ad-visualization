@@ -192,8 +192,6 @@ class ExpressionManager {
 
         let previousArrow = '';
 
-        console.log((text: string, font: string) => phantomTextSize(text, font));
-
         const x_char = phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
         const space = phantomTextSize('x', 'TimesNewRoman') /
             phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
@@ -203,8 +201,6 @@ class ExpressionManager {
             const csm = phantomTextSize(text, 'Comic Sans MS, Comic Sans, cursive');
 
             const x = Math.ceil((csm - tnr) / 2 * space / x_char);
-
-            console.log(text, tnr, csm, space, x)
 
             return '&nbsp;'.repeat(x) + text + '&nbsp;'.repeat(x);
         }
@@ -236,8 +232,6 @@ class ExpressionManager {
         }
 
         res += '}';
-
-        console.log(res)
 
         return res;
     }
