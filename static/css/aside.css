@@ -4,11 +4,6 @@
     --separator-color: var(--secondary);
 }
 
-border {
-    border: 1px solid var(--border-color);
-    border-radius: 0.25rem;
-}
-
 aside {
     position: relative;
     float: right;
