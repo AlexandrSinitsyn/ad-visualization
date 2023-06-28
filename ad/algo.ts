@@ -8,6 +8,7 @@ import { algoMapping } from "./operations.js";
 export interface Update {
     index: number;
     name: string;
+    nodeName: string;
     children: number[];
     v: Matrix | undefined;
     df: Matrix | undefined;
@@ -44,7 +45,7 @@ export type Step = Update | Meta | AlgoStep | ErrorStep;
 export namespace TypeChecking {
     export function isUpdate(step: Step): step is Update {
         return step !== undefined && step !== null && typeof step === "object" &&
-            ['index', 'name', 'children', 'v', 'df'].map((v) => v in (step as object)).reduce((a, b) => a && b);
+            ['index', 'name', 'nodeName', 'children', 'v', 'df'].map((v) => v in (step as object)).reduce((a, b) => a && b);
     }
 
     export function isRuleDef(step: Step): step is RuleDef {
@@ -82,8 +83,8 @@ export class Algorithm {
     public constructor(graph: FunctionTree.Node[], vars: Map<string, number[][]>, derivatives: Map<string, number[][]>) {
         this.graph = graph;
         this.mapping = new Map();
-        this.vars = new Map([...vars.entries()].map(([name, v]) => [name, new Matrix(v)]));
-        this.derivatives = new Map([...derivatives.entries()].map(([name, v]) => [name, new Matrix(v)]));
+        this.vars = new Map([...vars.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
+        this.derivatives = new Map([...derivatives.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
     }
 
     public getEdges(): [GraphNodes.Element, Info][] {
@@ -215,7 +216,7 @@ export class Algorithm {
     }
 
     private *backwards(): Generator<Step> {
-        this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('d' + nodeName));
+        this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('&#916;' + nodeName));
 
         for (const [e, { index, children }] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
             e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName));
@@ -255,12 +256,12 @@ export class Algorithm {
         for (const [e, info] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
             try {
                 if (e.df instanceof ZeroMatrix) {
-                    if (!this.derivatives.has(info.name)) {
+                    if (!this.derivatives.has(info.nodeName)) {
                         // noinspection ExceptionCaughtLocallyJS
-                        throw new AlgorithmError(`No derivative provided for "${info.name}"`);
+                        throw new AlgorithmError(`No derivative provided for "${info.nodeName}"`);
                     }
 
-                    e.df = this.derivatives.get(info.name)!;
+                    e.df = this.derivatives.get(info.nodeName)!;
                 }
 
                 e.diff();
@@ -280,10 +281,11 @@ export class Algorithm {
         return [...this.mapping.values()].find(([_, { index }]) => index === i)!;
     }
 
-    private static nodeToUpdate(e: GraphNodes.Element, { name, index, children }: Info): Update {
+    private static nodeToUpdate(e: GraphNodes.Element, { name, nodeName, index, children }: Info): Update {
         return {
             index: index,
             name: name,
+            nodeName: nodeName,
             children: children,
             v: e.v,
             df: e.df,
