@@ -3,6 +3,18 @@
 import { FunctionTree } from "./function-tree.js";
 import { GraphNodes } from "./graph-nodes.js";
 import { Matrix } from "../util/matrix.js";
+import { SymbolicDerivatives } from "./symbolic-derivatives.js";
+
+const SAdd = SymbolicDerivatives.Add;
+const SSub = SymbolicDerivatives.Sub;
+const SNeg = SymbolicDerivatives.Neg;
+const SMul = SymbolicDerivatives.Mul;
+const SDiv = SymbolicDerivatives.Div;
+const SPow = SymbolicDerivatives.Pow;
+const STns = SymbolicDerivatives.Tns;
+const SAOp = SymbolicDerivatives.AOp;
+const SVar = SymbolicDerivatives.Var;
+const SNum = SymbolicDerivatives.Num;
 
 export const parserMapping: Map<string, (args: FunctionTree.Node[]) => FunctionTree.Node> = new Map();
 export const algoMapping: Map<string, (args: GraphNodes.Element[]) => GraphNodes.Operation> = new Map();
@@ -12,7 +24,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
                  calc: (...operands: GraphNodes.Element[]) => Matrix,
                  toTex: (...operands: string[]) => string,
                  diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void,
-                 symbolicDiff: (sdf: string, ...operands: [GraphNodes.Element, string][]) => string[],
+                 symbolicDiff: (sdf: SymbolicDerivatives.Node, ...operands: SymbolicDerivatives.Node[]) => SymbolicDerivatives.Node[],
                  priority: FunctionTree.Priority | undefined = undefined): true {
     const ParserOp = class ParserOp extends FunctionTree.Operation {
         constructor(operands: FunctionTree.Node[]) {
@@ -38,10 +50,12 @@ function factory(symbol: string, type: FunctionTree.OperationType,
             diff(this.df, ...this.children);
         }
 
-        symbolicDiff(operands: [GraphNodes.Element, string][]): void {
-            const symbs = symbolicDiff(this.symbDf, ...operands);
+        symbolicDiff(childrenNames: string[]): void {
+            this.symbolicDiffs = childrenNames.map((x) => SVar(x));
 
-            this.children.forEach((c, i) => c.symbDf += symbs[i]);
+            const symbs = symbolicDiff(this.symbDf, ...this.symbolicDiffs).map((e) => e.simplify());
+
+            this.children.forEach((c, i) => c.symbDf = c.symbDf instanceof SymbolicDerivatives.Empty ? symbs[i] : SAdd(c.symbDf, symbs[i]));
             this.symbolicDiffs = this.symbolicDiffs.map((_, i) => symbs[i]);
         }
     }
@@ -61,7 +75,7 @@ const Plus = factory(
         a.df = a.df.add(df);
         b.df = b.df.add(df);
     },
-    (sdf, [a, $a], [b, $b]) => [sdf, sdf],
+    (sdf, a, b) => [sdf, sdf],
     FunctionTree.Priority.ADD
 );
 
@@ -70,7 +84,7 @@ const Add = factory(
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
     (...args) => `add\\left(${args.join(', ')}\\right)`,
     (df, ...args) => args.forEach((e) => e.df = e.df.add(df)),
-    (sdf, ...operands) => operands.map(([e, $e]) => sdf),
+    (sdf, ...operands) => operands.map((e) => sdf),
 );
 
 const Tanh = factory(
@@ -78,7 +92,7 @@ const Tanh = factory(
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
     (x) => `\\tanh\\left(${x}\\right)`,
     (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)),
-    (sdf, [x, $x]) => [`${sdf} / (1 - ${$x} * ${$x})`] // [`\\dfrac{df}{1 - ${x} * ${x}}`]
+    (sdf, x) => [SDiv(sdf, SSub(SNum(1), SMul(x, x)))]
 );
 
 const Mul = factory(
@@ -89,7 +103,7 @@ const Mul = factory(
         a.df = a.df.add(df.mul(b.v.transpose()));
         b.df = b.df.add(a.v.transpose().mul(df));
     },
-    (sdf, [a, $a], [b, $b]) => [`${sdf} * ${$b}^T`, `${$a}^T * ${sdf}`],
+    (sdf, a, b) => [SMul(sdf, STns(b)), SMul(STns(a), sdf)],
     FunctionTree.Priority.MUL
 );
 
@@ -103,8 +117,8 @@ const Adamar = factory(
         child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)))
     }),
     (sdf, ...operands) => [...Array(operands.length).keys()].map((i) => {
-        const row = operands.map(([v, $v]) => $v);
+        const row = [...operands];
         row[i] = sdf;
-        return 'had(' + row.join(', ') + ')';
+        return SAOp('had')(...row);
     })
 );

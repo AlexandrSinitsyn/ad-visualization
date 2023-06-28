@@ -1,12 +1,13 @@
 import { ZeroMatrix } from "../util/matrix.js";
 import { AlgorithmError } from "../util/errors.js";
+import { SymbolicDerivatives } from "./symbolic-derivatives.js";
 export var GraphNodes;
 (function (GraphNodes) {
     class Element {
         constructor() {
             this.v = new ZeroMatrix();
             this.df = new ZeroMatrix();
-            this.symbDf = '1';
+            this.symbDf = new SymbolicDerivatives.Empty();
         }
     }
     GraphNodes.Element = Element;
@@ -30,7 +31,7 @@ export var GraphNodes;
     class Operation extends Element {
         constructor(children) {
             super();
-            this._children = children.map((x) => [x, '']);
+            this._children = children.map((x) => [x, new SymbolicDerivatives.Empty()]);
         }
         get children() {
             return this._children.map(([x, _]) => x);
