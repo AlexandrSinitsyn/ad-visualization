@@ -67,12 +67,16 @@ class ExpressionManager {
     private vars: Map<string, number[][]>;
     private derivatives: Map<string, number[][]>;
 
-    constructor(algorithm: Algorithm) {
+    private readonly withDetails: boolean;
+
+    constructor(algorithm: Algorithm, withDetails: boolean) {
         this.algo = algorithm;
         this.updates = [];
 
         this.vars = new Map();
         this.derivatives = new Map();
+
+        this.withDetails = withDetails;
 
         this.init();
     }
@@ -216,7 +220,7 @@ class ExpressionManager {
                 const { index, name, nodeName, v, df, symbolicDf } = f;
 
                 const matrixSize = v?.isZero() ? '' : `\\n[${v!.size()}]`;
-                const valD = v?.isZero() ? '' : `|{val\\n${v!}|&#916;${nodeName}\\n${df ?? ''}}`;
+                const valD = v?.isZero() || !this.withDetails ? '' : `|{val\\n${v!}|&#916;${nodeName}\\n${df ?? ''}}`;
                 const sdf = symbolicDf === undefined ? '' : `|{${untrim(symbolicDf)}}`;
 
                 res += `${index} [label="${untrim(name)}${matrixSize}${sdf}${valD}"; constraint=false; class="testing"];\n`;
@@ -258,8 +262,8 @@ class GraphDrawer {
         this.isAnimated = true;
     }
 
-    public setFunction(algo: Algorithm) {
-        this.expression = new ExpressionManager(algo);
+    public setFunction(algo: Algorithm, withDetails: boolean) {
+        this.expression = new ExpressionManager(algo, withDetails);
     }
 
     /**
@@ -379,8 +383,8 @@ export class BrowserManager {
         this.player?.goto(frame);
     }
 
-    public setFunction(graph: FunctionTree.Node[]) {
-        this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives));
+    public setFunction(graph: FunctionTree.Node[], inputMatrixMode: boolean) {
+        this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives, inputMatrixMode), inputMatrixMode);
 
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {
             const result = this.graphDrawer.moveTo(frame);
@@ -396,10 +400,12 @@ export class BrowserManager {
         this.boundPlayer = onUpdate;
     }
 
-    public updateValue(name: string, v: number[][]) {
+    public updateValue(name: string, v: number[][], withDerivatives: boolean) {
         this.vars.set(name, v);
 
         const derivatives = this.graphDrawer.updateVars(this.vars);
+
+        if (!withDerivatives) return;
 
         this.derivativeAcceptor(...derivatives);
     }

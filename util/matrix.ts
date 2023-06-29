@@ -1,4 +1,5 @@
 import { AlgorithmError } from "./errors.js";
+import { Arrays } from "../util/arrays.js";
 
 export class Matrix {
     private readonly data: number[][];
@@ -86,11 +87,7 @@ export class Matrix {
     }
 
     private static gen(r: number, c: number): Matrix {
-        const resData = new Array(r);
-        for (let i = 0; i < resData.length; i++) {
-            resData[i] = Array(c).fill(0);
-        }
-        return new Matrix(resData)
+        return new Matrix(Arrays.genZero(r, c));
     }
 }
 

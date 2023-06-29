@@ -39,12 +39,13 @@ export var TypeChecking;
     TypeChecking.isErrorStep = isErrorStep;
 })(TypeChecking || (TypeChecking = {}));
 export class Algorithm {
-    constructor(graph, vars, derivatives) {
+    constructor(graph, vars, derivatives, withDerivatives) {
         this.seq = this.genFunName();
         this.graph = graph;
         this.mapping = new Map();
         this.vars = new Map([...vars.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
         this.derivatives = new Map([...derivatives.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
+        this.withDerivatives = withDerivatives;
     }
     getEdges() {
         const edgeChecks = new Array(this.graph.length).fill(true);
@@ -75,12 +76,14 @@ export class Algorithm {
         yield* this.backwards();
         yield AlgoStep.CALC;
         yield* this.calc();
-        yield AlgoStep.DIFF;
-        yield* this.diff();
+        if (this.withDerivatives) {
+            yield AlgoStep.DIFF;
+            yield* this.diff();
+        }
         yield AlgoStep.FINISH;
     }
     updateAlgo(newVars, newDerivatives) {
-        return new Algorithm(this.graph, newVars, newDerivatives);
+        return new Algorithm(this.graph, newVars, newDerivatives, this.withDerivatives);
     }
     *init() {
         let index = 0;

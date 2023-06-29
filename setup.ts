@@ -1,6 +1,7 @@
 import { BrowserManager } from "./ad/browser-manager.js";
 import { FunctionTree } from "./ad/function-tree.js";
 import { parseFunction } from "./parser/parser.js";
+import { Arrays } from "./util/arrays.js";
 
 export const browser = new BrowserManager("graph");
 
@@ -63,7 +64,7 @@ $(document).ready(function () {
     });
 });
 
-function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: number[][]) => void, fixed: [number, number] | false): JQuery<HTMLElement> {
+function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: number[][]) => void, fixed: [number, number] | boolean): JQuery<HTMLElement> {
     const $new = $($parent.find('template').prop('content')).clone();
 
     const $cell = $($new.find('template').prop('content'));
@@ -93,7 +94,7 @@ function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: 
 
             console.log('>', name, '=', VALUE);
 
-            onUpdate(VALUE);
+            onUpdate(fixed === true ? Arrays.genZero(VALUE[0][0], VALUE[0][1]) : VALUE);
         });
 
         return $newCell;
@@ -131,10 +132,12 @@ function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: 
         $new.find('.expand-right').click(newCol);
         $new.find('.expand-down').click(newRow);
     } else {
-        for (let i = 0; i < fixed[0] - 1; i++) {
+        let fixedArr = fixed === true ? [1, 2] : fixed;
+
+        for (let i = 0; i < fixedArr[0] - 1; i++) {
             newRow();
         }
-        for (let i = 0; i < fixed[1] - 1; i++) {
+        for (let i = 0; i < fixedArr[1] - 1; i++) {
             newCol();
         }
     }
@@ -165,6 +168,7 @@ $(document).ready(function () {
 // LaTeX visualizer
 $(document).ready(function () {
     const $funInput = $('#function-input');
+    const $inputMatrixMode = document.getElementById('input-matrix-mode') as HTMLInputElement;
 
     $funInput.keyup(function () {
         const expr = parseFunction(str($("#function-input")));
@@ -191,10 +195,10 @@ $(document).ready(function () {
 
         expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
             const name = (n as FunctionTree.Variable).name;
-            newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+            newMatrix($variables, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), !$inputMatrixMode.checked);
         })
 
-        const max = browser.setFunction(expr.graph);
+        const max = browser.setFunction(expr.graph, $inputMatrixMode.checked);
 
         const $player = $('#player');
         $player.attr('max', max)
@@ -242,6 +246,13 @@ $(document).ready(function () {
             notify(result);
         }
     });
+});
+
+$(document).ready(function () {
+    const $funInput = $('#function-input');
+    const $inputMatrixMode = document.getElementById('input-matrix-mode');
+
+    $inputMatrixMode!.addEventListener('change', () => $funInput.trigger('keyup'));
 });
 
 export function phantomTextSize(text: string, font: string): number {
