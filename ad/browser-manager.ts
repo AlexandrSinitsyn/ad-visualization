@@ -383,8 +383,8 @@ export class BrowserManager {
         this.player?.goto(frame);
     }
 
-    public setFunction(graph: FunctionTree.Node[], inputMatrixMode: boolean) {
-        this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives, inputMatrixMode), inputMatrixMode);
+    public setFunction(graph: FunctionTree.Node[], inputMatrixMode: boolean, scalarMode: boolean) {
+        this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives, inputMatrixMode, scalarMode), inputMatrixMode);
 
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {
             const result = this.graphDrawer.moveTo(frame);

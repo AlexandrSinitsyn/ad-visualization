@@ -39,13 +39,14 @@ export var TypeChecking;
     TypeChecking.isErrorStep = isErrorStep;
 })(TypeChecking || (TypeChecking = {}));
 export class Algorithm {
-    constructor(graph, vars, derivatives, withDerivatives) {
+    constructor(graph, vars, derivatives, withDerivatives, scalarMode) {
         this.seq = this.genFunName();
         this.graph = graph;
         this.mapping = new Map();
         this.vars = new Map([...vars.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
         this.derivatives = new Map([...derivatives.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
         this.withDerivatives = withDerivatives;
+        this.scalarMode = scalarMode;
     }
     getEdges() {
         const edgeChecks = new Array(this.graph.length).fill(true);
@@ -83,7 +84,7 @@ export class Algorithm {
         yield AlgoStep.FINISH;
     }
     updateAlgo(newVars, newDerivatives) {
-        return new Algorithm(this.graph, newVars, newDerivatives, this.withDerivatives);
+        return new Algorithm(this.graph, newVars, newDerivatives, this.withDerivatives, this.scalarMode);
     }
     *init() {
         let index = 0;
@@ -155,7 +156,7 @@ export class Algorithm {
     *backwards() {
         this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('&#916;' + nodeName));
         for (const [e, { index, children }] of [...this.mapping.values()].sort(([, { index: i1 }], [, { index: i2 }]) => i2 - i1)) {
-            e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName));
+            e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName), this.scalarMode);
             for (let i = 0; i < children.length; i++) {
                 yield {
                     from: index,

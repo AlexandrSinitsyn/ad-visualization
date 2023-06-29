@@ -81,13 +81,15 @@ export class Algorithm {
     private readonly vars: Map<string, Matrix>;
     private readonly derivatives: Map<string, Matrix>;
     private readonly withDerivatives: boolean;
+    private readonly scalarMode: boolean;
 
-    public constructor(graph: FunctionTree.Node[], vars: Map<string, number[][]>, derivatives: Map<string, number[][]>, withDerivatives: boolean) {
+    public constructor(graph: FunctionTree.Node[], vars: Map<string, number[][]>, derivatives: Map<string, number[][]>, withDerivatives: boolean, scalarMode: boolean) {
         this.graph = graph;
         this.mapping = new Map();
         this.vars = new Map([...vars.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
         this.derivatives = new Map([...derivatives.entries()].map(([nodeName, v]) => [nodeName, new Matrix(v)]));
         this.withDerivatives = withDerivatives;
+        this.scalarMode = scalarMode;
     }
 
     public getEdges(): [GraphNodes.Element, Info][] {
@@ -136,7 +138,7 @@ export class Algorithm {
     }
 
     public updateAlgo(newVars: Map<string, number[][]>, newDerivatives: Map<string, number[][]>): Algorithm {
-        return new Algorithm(this.graph, newVars, newDerivatives, this.withDerivatives);
+        return new Algorithm(this.graph, newVars, newDerivatives, this.withDerivatives, this.scalarMode);
     }
 
     private *init(): Generator<Step> {
@@ -224,7 +226,7 @@ export class Algorithm {
         this.getEdges().forEach(([v, { nodeName }]) => v.symbDf = SymbolicDerivatives.Var('&#916;' + nodeName));
 
         for (const [e, { index, children }] of [...this.mapping.values()].sort(([ , {index: i1}], [ , {index: i2}]) => i2 - i1)) {
-            e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName));
+            e.symbolicDiff(children.map((e) => this.nodeByIndex(e)[1].nodeName), this.scalarMode);
 
             for (let i = 0; i < children.length; i++) {
                 yield {
