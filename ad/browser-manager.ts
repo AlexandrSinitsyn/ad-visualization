@@ -186,7 +186,7 @@ class ExpressionManager {
         res += `
         // graph [layout = fdp]
         rankdir=LR;
-        node [shape=Mrecord, color=blue];
+        node [shape=Mrecord, color=blue; style="filled"; fillcolor="white"];
         splines="compound";
         pack=false;
         node [fontname="Comic Sans MS, Comic Sans, cursive"; fontname="italic"];

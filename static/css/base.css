@@ -108,6 +108,13 @@ main > #graph {
     border-radius: 0.25rem;
 }
 
+main > #graph .node:hover,
+main > #graph .edge:hover,
+main > #graph .edge:hover > * {
+    color: gray;
+    stroke: red;
+}
+
 main > #graph > * {
     width: auto;
     height: 100%;
