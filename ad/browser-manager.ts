@@ -1,6 +1,7 @@
 import { Algorithm, AlgoStep, Update, Meta, RuleDef, Arrow, ErrorStep, Step, TypeChecking } from "./algo.js";
 import { FunctionTree } from "./function-tree.js";
 import { BrowserInitializationError } from "../util/errors.js";
+import { phantomTextSize } from "../setup.js";
 
 export type Millis = number;
 export type Frame = number;
@@ -151,6 +152,9 @@ class ExpressionManager {
                 prev.from = a.from;
                 prev.to = a.to;
                 prev.text = a.text;
+
+                res.push(prev);
+                res.splice(res.indexOf(prev), 1);
                 continue;
             }
 
@@ -166,6 +170,7 @@ class ExpressionManager {
             prev.name = u.name
             prev.v = u.v;
             prev.df = u.df;
+            prev.symbolicDf = u.symbolicDf;
         }
 
         return res;
@@ -180,25 +185,45 @@ class ExpressionManager {
         node [shape=Mrecord, color=blue];
         splines="compound";
         pack=false;
+        node [fontname="Comic Sans MS, Comic Sans, cursive"; fontname="italic"];
         `;
 
         const clusters: RuleDef[] = [];
+
+        let previousArrow = '';
+
+        const x_char = phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
+        const space = phantomTextSize('x', 'TimesNewRoman') /
+            phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
+
+        const untrim = (text: string): string => {
+            const escaped = text.replace(/&#916;/, '\u0394');
+            const tnr = phantomTextSize(escaped, 'TimesNewRoman');
+            const csm = phantomTextSize(escaped, 'Comic Sans MS, Comic Sans, cursive');
+
+            const x = Math.ceil((csm - tnr) / 2 * space / x_char);
+
+            return '&nbsp;'.repeat(x) + escaped + '&nbsp;'.repeat(x);
+        }
 
         for (const f of this.apply(frame)) {
             if (TypeChecking.isRuleDef(f)) {
                 clusters.push(f);
             } else if (TypeChecking.isArrow(f)) {
-                res += `${f.from} -> ${f.to} [label="${f.text}"]`;
+                res += previousArrow;
+                previousArrow = `${f.from} -> ${f.to} [label="${untrim(f.text)}"];\n`;
             } else {
-                const { index, name, nodeName, children, v, df } = f;
+                const { index, name, nodeName, v, df, symbolicDf } = f;
 
                 const matrixSize = v?.isZero() ? '' : `\\n[${v!.size()}]`;
                 const valD = v?.isZero() ? '' : `|{val\\n${v!}|&#916;${nodeName}\\n${df ?? ''}}`;
+                const sdf = symbolicDf === undefined ? '' : `|{${untrim(symbolicDf)}}`;
 
-                res += `${index} [label="${name}${matrixSize}${valD}"; constraint=false];\n`;
-                // res += children.map((c) => `${index} -> ${c};`).join('\n');
+                res += `${index} [label="${untrim(name)}${matrixSize}${sdf}${valD}"; constraint=false; class="testing"];\n`;
             }
         }
+
+        res += previousArrow.length === 0 ? '' : previousArrow.slice(0, previousArrow.length - 3) + '; color=green; fontcolor=green];\n';
 
         for (const c of clusters) {
             res += `subgraph cluster_${c.name} {`;

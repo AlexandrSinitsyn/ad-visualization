@@ -132,10 +132,11 @@ $(document).ready(function () {
         const $functionError = $("#function-error");
         if (!expr.isOk()) {
             $functionError.text(expr.error());
-            $functionError.show();
+            // $functionError.show();
         }
         else {
-            $functionError.hide();
+            // $functionError.hide();
+            $functionError.text('');
         }
         const $function = $('#function-show');
         $function.text(expr.expr().map((e) => {
@@ -187,3 +188,10 @@ $(document).ready(function () {
         }
     });
 });
+export function phantomTextSize(text, font) {
+    var _a;
+    const $field = $('.frame-update > #textholder');
+    $field.text(text);
+    $field.css('font-family', font);
+    return (_a = $field.innerWidth()) !== null && _a !== void 0 ? _a : 0;
+}
