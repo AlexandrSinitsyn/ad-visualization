@@ -89,12 +89,15 @@
         <label for="function-input" class="marker">Function</label>
         <textarea id="function-input" class="form-control" placeholder="y = x * x
 f = y + 2 * x + &hellip;"></textarea>
-        <label class="switches" style="margin-top: 1rem;">
-            <input type="checkbox" id="input-matrix-mode">
-            <label for="input-matrix-mode">Enable input matrix</label>
-            <input type="checkbox" id="scalar-mode">
-            <label for="scalar-mode">Enable scalar mode</label>
-        </label>
+    </div>
+    <div class="modes">
+        <label for="switches" class="marker">Mode</label>
+        <input id="switches" type="range" value="0" min="0" max="2" list="switch-list">
+        <datalist id="switch-list">
+            <option value="0" label="Only size"></option>
+            <option value="1" label="Matrix"></option>
+            <option value="2" label="Scalar"></option>
+        </datalist>
     </div>
     <div class="variables">
         <span class="marker">Variables</span>
@@ -142,6 +145,34 @@ f = y + 2 * x + &hellip;"></textarea>
                             </td>
                         </template>
                         <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </div>
+    <div class="sizes">
+        <span class="marker">Sizes</span>
+        <div class="content">
+            <template>
+                <div class="var">
+                    <div class="variable-name">
+                        <span class="marker"></span>
+                    </div>
+                    <table class="input">
+                        <tbody>
+                        <tr>
+                            <td>
+                                <label>
+                                    <input class="table-item" type="number" min="1" step="1">
+                                </label>
+                            </td>
+                            <td>
+                                <label>
+                                    <input class="table-item" type="number" min="1" step="1">
+                                </label>
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

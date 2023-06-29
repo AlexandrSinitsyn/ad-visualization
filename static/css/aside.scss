@@ -23,8 +23,10 @@ aside {
             "fps remove-animation"
             "sep2 sep2"
             "function function"
+            "modes modes"
             "variables variables"
-            "derivatives derivatives";
+            "derivatives derivatives"
+            "sizes sizes";
 }
 
 aside > * {
@@ -32,7 +34,7 @@ aside > * {
   width: 10vw;
 }
 
-@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'remove-animation' 'sep2' 'function' 'variables' 'derivatives' {
+@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'remove-animation' 'sep2' 'function' 'modes' 'variables' 'derivatives' 'sizes' {
   aside > .#{$name} {
     grid-area: unquote($name);
   }
@@ -49,6 +51,25 @@ aside > .function * {
   width: auto;
 }
 
+aside > .modes {
+  & > #switches {
+    width: 100%;
+  }
+
+  & > #switch-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    writing-mode: vertical-lr;
+
+    & > option {
+      width: auto;
+      padding: 0;
+    }
+  }
+}
+
 aside * {
   width: 100%;
 }
@@ -59,7 +80,8 @@ aside .marker {
 
 aside {
   & > .variables,
-  & > .derivatives {
+  & > .derivatives,
+  & > .sizes {
     & > .content {
       width: 100%;
       max-width: 100%;
@@ -90,7 +112,8 @@ aside {
 
 @each $name in 'variable-name' 'input' 'expand-right' 'expand-down' {
   aside > .variables,
-  aside > .derivatives {
+  aside > .derivatives,
+  aside > .sizes {
     & > .content > .var > .#{$name} {
       grid-area: unquote($name);
     }
@@ -98,7 +121,8 @@ aside {
 }
 
 aside > .variables,
-aside > .derivatives {
+aside > .derivatives,
+aside > .sizes {
   & > .content > .var {
     & > .variable-name {
       width: 3rem;
@@ -127,6 +151,13 @@ aside > .derivatives {
 
     * {
       text-align: center;
+    }
+
+    & > .expand-right,
+    & > .expand-down {
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     & > .expand-right {
