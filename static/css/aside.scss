@@ -23,6 +23,7 @@ aside {
             "fps remove-animation"
             "sep2 sep2"
             "function function"
+            "modes modes"
             "variables variables"
             "derivatives derivatives"
             "sizes sizes";
@@ -33,7 +34,7 @@ aside > * {
   width: 10vw;
 }
 
-@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'remove-animation' 'sep2' 'function' 'variables' 'derivatives' 'sizes' {
+@each $name in 'play' 'step' 'pause' 'stop' 'sep1' 'fps' 'remove-animation' 'sep2' 'function' 'modes' 'variables' 'derivatives' 'sizes' {
   aside > .#{$name} {
     grid-area: unquote($name);
   }
@@ -48,6 +49,25 @@ aside > .sep2 {
 
 aside > .function * {
   width: auto;
+}
+
+aside > .modes {
+  & > #switches {
+    width: 100%;
+  }
+
+  & > #switch-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    writing-mode: vertical-lr;
+
+    & > option {
+      width: auto;
+      padding: 0;
+    }
+  }
 }
 
 aside * {

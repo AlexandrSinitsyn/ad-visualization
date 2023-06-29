@@ -132,10 +132,12 @@ $(document).ready(function () {
 // LaTeX visualizer
 $(document).ready(function () {
     const $funInput = $('#function-input');
-    const $inputMatrixMode = document.getElementById('input-matrix-mode');
-    const $scalarMode = document.getElementById('scalar-mode');
+    const $switches = $('#switches');
     $funInput.keyup(function () {
-        const expr = parseFunction(str($("#function-input")), $scalarMode.checked);
+        const isSizes = int($switches) === 0;
+        const isMatrix = int($switches) === 1;
+        const isScalar = int($switches) === 2;
+        const expr = parseFunction(str($("#function-input")), isScalar);
         const $functionError = $("#function-error");
         if (!expr.isOk()) {
             $functionError.text(expr.error());
@@ -157,9 +159,9 @@ $(document).ready(function () {
         $sizes.children('.var').remove();
         expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
             const name = n.name;
-            newMatrix($inputMatrixMode.checked ? $variables : $sizes, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
+            newMatrix(isSizes ? $sizes : $variables, name, (v) => browser.updateValue(name, v, !isSizes), isScalar ? [1, 1] : isSizes);
         });
-        const max = browser.setFunction(expr.graph, $inputMatrixMode.checked, $scalarMode.checked);
+        const max = browser.setFunction(expr.graph, !isSizes, isScalar);
         const $player = $('#player');
         $player.attr('max', max);
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
@@ -200,19 +202,12 @@ $(document).ready(function () {
 // modes
 $(document).ready(function () {
     const $funInput = $('#function-input');
-    const $inputMatrixMode = document.getElementById('input-matrix-mode');
-    const $scalarMode = document.getElementById('scalar-mode');
-    $inputMatrixMode.addEventListener('change', () => $funInput.trigger('keyup'));
-    $scalarMode.addEventListener('change', function () {
-        if (this.checked) {
-            $inputMatrixMode.checked = true;
-            $inputMatrixMode.disabled = true;
-        }
-        else {
-            $inputMatrixMode.disabled = false;
-        }
+    const $switches = $('#switches');
+    $switches.change(() => {
+        $switches.parent().find('label').text();
         $funInput.trigger('keyup');
     });
+    $switches.trigger('change');
 });
 export function phantomTextSize(text, font) {
     var _a;

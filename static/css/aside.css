@@ -22,6 +22,7 @@ aside {
             "fps remove-animation"
             "sep2 sep2"
             "function function"
+            "modes modes"
             "variables variables"
             "derivatives derivatives"
             "sizes sizes";
@@ -68,6 +69,10 @@ aside > .function {
     grid-area: function;
 }
 
+aside > .modes {
+    grid-area: modes;
+}
+
 aside > .variables {
     grid-area: variables;
 }
@@ -89,6 +94,23 @@ aside > .sep2 {
 
 aside > .function * {
     width: auto;
+}
+
+aside > .modes > #switches {
+    width: 100%;
+}
+
+aside > .modes > #switch-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    writing-mode: vertical-lr;
+}
+
+aside > .modes > #switch-list > option {
+    width: auto;
+    padding: 0;
 }
 
 aside * {

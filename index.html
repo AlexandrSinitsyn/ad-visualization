@@ -89,12 +89,15 @@
         <label for="function-input" class="marker">Function</label>
         <textarea id="function-input" class="form-control" placeholder="y = x * x
 f = y + 2 * x + &hellip;"></textarea>
-        <label class="switches" style="margin-top: 1rem;">
-            <input type="checkbox" id="input-matrix-mode">
-            <label for="input-matrix-mode">Enable input matrix</label>
-            <input type="checkbox" id="scalar-mode">
-            <label for="scalar-mode">Enable scalar mode</label>
-        </label>
+    </div>
+    <div class="modes">
+        <label for="switches" class="marker">Mode</label>
+        <input id="switches" type="range" value="0" min="0" max="2" list="switch-list">
+        <datalist id="switch-list">
+            <option value="0" label="Only size"></option>
+            <option value="1" label="Matrix"></option>
+            <option value="2" label="Scalar"></option>
+        </datalist>
     </div>
     <div class="variables">
         <span class="marker">Variables</span>
