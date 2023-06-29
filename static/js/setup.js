@@ -102,6 +102,8 @@ function newMatrix($parent, name, onUpdate, fixed) {
         $new.find('.expand-down').click(newRow);
     }
     else {
+        $new.find('.expand-right').remove();
+        $new.find('.expand-down').remove();
         let fixedArr = fixed === true ? [1, 2] : fixed;
         for (let i = 0; i < fixedArr[0] - 1; i++) {
             newRow();
@@ -115,6 +117,7 @@ function newMatrix($parent, name, onUpdate, fixed) {
 }
 const $variables = $('.variables').find('.content');
 const $derivatives = $('.derivatives').find('.content');
+const $sizes = $('.sizes').find('.content');
 // setup variables-input
 $(document).ready(function () {
     browser.onAcceptDerivative((...args) => {
@@ -150,9 +153,11 @@ $(document).ready(function () {
         // @ts-ignore
         MathJax.typeset();
         $variables.children('.var').remove();
+        $derivatives.children('.var').remove();
+        $sizes.children('.var').remove();
         expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
             const name = n.name;
-            newMatrix($variables, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
+            newMatrix($inputMatrixMode.checked ? $variables : $sizes, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
         });
         const max = browser.setFunction(expr.graph, $inputMatrixMode.checked, $scalarMode.checked);
         const $player = $('#player');
@@ -192,6 +197,7 @@ $(document).ready(function () {
         }
     });
 });
+// modes
 $(document).ready(function () {
     const $funInput = $('#function-input');
     const $inputMatrixMode = document.getElementById('input-matrix-mode');

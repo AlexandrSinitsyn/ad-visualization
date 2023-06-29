@@ -384,6 +384,9 @@ export class BrowserManager {
     }
 
     public setFunction(graph: FunctionTree.Node[], inputMatrixMode: boolean, scalarMode: boolean) {
+        this.vars.clear();
+        this.derivatives.clear();
+
         this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives, inputMatrixMode, scalarMode), inputMatrixMode);
 
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {

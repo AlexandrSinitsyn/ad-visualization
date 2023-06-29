@@ -23,7 +23,8 @@ aside {
             "sep2 sep2"
             "function function"
             "variables variables"
-            "derivatives derivatives";
+            "derivatives derivatives"
+            "sizes sizes";
 }
 
 aside > * {
@@ -75,6 +76,10 @@ aside > .derivatives {
     grid-area: derivatives;
 }
 
+aside > .sizes {
+    grid-area: sizes;
+}
+
 aside > .sep1,
 aside > .sep2 {
     max-width: 100%;
@@ -95,7 +100,8 @@ aside .marker {
 }
 
 aside > .variables > .content,
-aside > .derivatives > .content {
+aside > .derivatives > .content,
+aside > .sizes > .content {
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -107,7 +113,8 @@ aside > .derivatives > .content {
 }
 
 aside > .variables > .content > .var,
-aside > .derivatives > .content > .var {
+aside > .derivatives > .content > .var,
+aside > .sizes > .content > .var {
     width: auto;
     height: auto;
     padding: 0.25rem;
@@ -123,27 +130,32 @@ aside > .derivatives > .content > .var {
 }
 
 aside > .variables > .content > .var > .variable-name,
-aside > .derivatives > .content > .var > .variable-name {
+aside > .derivatives > .content > .var > .variable-name,
+aside > .sizes > .content > .var > .variable-name {
     grid-area: variable-name;
 }
 
 aside > .variables > .content > .var > .input,
-aside > .derivatives > .content > .var > .input {
+aside > .derivatives > .content > .var > .input,
+aside > .sizes > .content > .var > .input {
     grid-area: input;
 }
 
 aside > .variables > .content > .var > .expand-right,
-aside > .derivatives > .content > .var > .expand-right {
+aside > .derivatives > .content > .var > .expand-right,
+aside > .sizes > .content > .var > .expand-right {
     grid-area: expand-right;
 }
 
 aside > .variables > .content > .var > .expand-down,
-aside > .derivatives > .content > .var > .expand-down {
+aside > .derivatives > .content > .var > .expand-down,
+aside > .sizes > .content > .var > .expand-down {
     grid-area: expand-down;
 }
 
 aside > .variables > .content > .var > .variable-name,
-aside > .derivatives > .content > .var > .variable-name {
+aside > .derivatives > .content > .var > .variable-name,
+aside > .sizes > .content > .var > .variable-name {
     width: 3rem;
     margin: 0.25rem auto;
 }
@@ -151,48 +163,58 @@ aside > .derivatives > .content > .var > .variable-name {
 aside > .variables > .content > .var > .input input::-webkit-outer-spin-button,
 aside > .variables > .content > .var > .input input::-webkit-inner-spin-button,
 aside > .derivatives > .content > .var > .input input::-webkit-outer-spin-button,
-aside > .derivatives > .content > .var > .input input::-webkit-inner-spin-button {
+aside > .derivatives > .content > .var > .input input::-webkit-inner-spin-button,
+aside > .sizes > .content > .var > .input input::-webkit-outer-spin-button,
+aside > .sizes > .content > .var > .input input::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
 
 aside > .variables > .content > .var > .input tr *,
-aside > .derivatives > .content > .var > .input tr * {
+aside > .derivatives > .content > .var > .input tr *,
+aside > .sizes > .content > .var > .input tr * {
     width: 2rem;
 }
 
 aside > .variables > .content > .var > .input th:nth-child(n + 2),
-aside > .derivatives > .content > .var > .input th:nth-child(n + 2) {
+aside > .derivatives > .content > .var > .input th:nth-child(n + 2),
+aside > .sizes > .content > .var > .input th:nth-child(n + 2) {
     padding-left: 0.5rem;
 }
 
 aside > .variables > .content > .var > .input tr:last-child > th:nth-child(n + 2),
-aside > .derivatives > .content > .var > .input tr:last-child > th:nth-child(n + 2) {
+aside > .derivatives > .content > .var > .input tr:last-child > th:nth-child(n + 2),
+aside > .sizes > .content > .var > .input tr:last-child > th:nth-child(n + 2) {
     padding-left: 0.5rem;
 }
 
 aside > .variables > .content > .var *,
-aside > .derivatives > .content > .var * {
+aside > .derivatives > .content > .var *,
+aside > .sizes > .content > .var * {
     text-align: center;
 }
 
 aside > .variables > .content > .var > .expand-right,
 aside > .variables > .content > .var > .expand-down,
 aside > .derivatives > .content > .var > .expand-right,
-aside > .derivatives > .content > .var > .expand-down {
+aside > .derivatives > .content > .var > .expand-down,
+aside > .sizes > .content > .var > .expand-right,
+aside > .sizes > .content > .var > .expand-down {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 aside > .variables > .content > .var > .expand-right,
-aside > .derivatives > .content > .var > .expand-right {
+aside > .derivatives > .content > .var > .expand-right,
+aside > .sizes > .content > .var > .expand-right {
     width: 3rem;
     height: 100%;
 }
 
 aside > .variables > .content > .var > .expand-down,
-aside > .derivatives > .content > .var > .expand-down {
+aside > .derivatives > .content > .var > .expand-down,
+aside > .sizes > .content > .var > .expand-down {
     width: 100%;
     height: 2rem;
 }

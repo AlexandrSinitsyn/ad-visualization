@@ -133,6 +133,8 @@ function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: 
         $new.find('.expand-right').click(newCol);
         $new.find('.expand-down').click(newRow);
     } else {
+        $new.find('.expand-right').remove();
+        $new.find('.expand-down').remove();
         let fixedArr = fixed === true ? [1, 2] : fixed;
 
         for (let i = 0; i < fixedArr[0] - 1; i++) {
@@ -150,6 +152,7 @@ function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: 
 
 const $variables = $('.variables').find('.content');
 const $derivatives = $('.derivatives').find('.content');
+const $sizes = $('.sizes').find('.content');
 
 // setup variables-input
 $(document).ready(function () {
@@ -194,10 +197,12 @@ $(document).ready(function () {
         MathJax.typeset();
 
         $variables.children('.var').remove();
+        $derivatives.children('.var').remove();
+        $sizes.children('.var').remove();
 
         expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
             const name = (n as FunctionTree.Variable).name;
-            newMatrix($variables, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
+            newMatrix($inputMatrixMode.checked ? $variables : $sizes, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
         })
 
         const max = browser.setFunction(expr.graph, $inputMatrixMode.checked, $scalarMode.checked);
@@ -250,6 +255,7 @@ $(document).ready(function () {
     });
 });
 
+// modes
 $(document).ready(function () {
     const $funInput = $('#function-input');
     const $inputMatrixMode = document.getElementById('input-matrix-mode') as HTMLInputElement;
