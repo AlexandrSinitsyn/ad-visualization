@@ -197,12 +197,13 @@ class ExpressionManager {
             phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
 
         const untrim = (text: string): string => {
-            const tnr = phantomTextSize(text, 'TimesNewRoman');
-            const csm = phantomTextSize(text, 'Comic Sans MS, Comic Sans, cursive');
+            const escaped = text.replace(/&#916;/, '\u0394');
+            const tnr = phantomTextSize(escaped, 'TimesNewRoman');
+            const csm = phantomTextSize(escaped, 'Comic Sans MS, Comic Sans, cursive');
 
             const x = Math.ceil((csm - tnr) / 2 * space / x_char);
 
-            return '&nbsp;'.repeat(x) + text + '&nbsp;'.repeat(x);
+            return '&nbsp;'.repeat(x) + escaped + '&nbsp;'.repeat(x);
         }
 
         for (const f of this.apply(frame)) {
