@@ -16,7 +16,7 @@ export namespace GraphNodes {
 
         public abstract eval(): void;
         public abstract diff(): void;
-        public abstract symbolicDiff(childrenNames: string[]): void;
+        public abstract symbolicDiff(childrenNames: string[], scalarMode: boolean): void;
     }
 
     export class Var extends Element {

@@ -1,9 +1,10 @@
 import { BrowserManager } from "./ad/browser-manager.js";
 import { FunctionTree } from "./ad/function-tree.js";
 import { parseFunction } from "./parser/parser.js";
+import { Arrays } from "./util/arrays.js";
 export const browser = new BrowserManager("graph");
 console.log("Browser manager:", browser);
-console.log('parser', (input) => parseFunction(input));
+console.log('parser', (input, scalarMode) => parseFunction(input, scalarMode));
 // fixme
 function notify(message) {
     alert(message);
@@ -68,7 +69,7 @@ function newMatrix($parent, name, onUpdate, fixed) {
                 });
             });
             console.log('>', name, '=', VALUE);
-            onUpdate(VALUE);
+            onUpdate(fixed === true ? Arrays.genZero(VALUE[0][0], VALUE[0][1]) : VALUE);
         });
         return $newCell;
     };
@@ -101,10 +102,11 @@ function newMatrix($parent, name, onUpdate, fixed) {
         $new.find('.expand-down').click(newRow);
     }
     else {
-        for (let i = 0; i < fixed[0] - 1; i++) {
+        let fixedArr = fixed === true ? [1, 2] : fixed;
+        for (let i = 0; i < fixedArr[0] - 1; i++) {
             newRow();
         }
-        for (let i = 0; i < fixed[1] - 1; i++) {
+        for (let i = 0; i < fixedArr[1] - 1; i++) {
             newCol();
         }
     }
@@ -127,8 +129,10 @@ $(document).ready(function () {
 // LaTeX visualizer
 $(document).ready(function () {
     const $funInput = $('#function-input');
+    const $inputMatrixMode = document.getElementById('input-matrix-mode');
+    const $scalarMode = document.getElementById('scalar-mode');
     $funInput.keyup(function () {
-        const expr = parseFunction(str($("#function-input")));
+        const expr = parseFunction(str($("#function-input")), $scalarMode.checked);
         const $functionError = $("#function-error");
         if (!expr.isOk()) {
             $functionError.text(expr.error());
@@ -148,9 +152,9 @@ $(document).ready(function () {
         $variables.children('.var').remove();
         expr.graph.filter((e) => e instanceof FunctionTree.Variable).forEach((n) => {
             const name = n.name;
-            newMatrix($variables, name, (v) => browser.updateValue(name, v), false);
+            newMatrix($variables, name, (v) => browser.updateValue(name, v, $inputMatrixMode.checked), $scalarMode.checked ? [1, 1] : !$inputMatrixMode.checked);
         });
-        const max = browser.setFunction(expr.graph);
+        const max = browser.setFunction(expr.graph, $inputMatrixMode.checked, $scalarMode.checked);
         const $player = $('#player');
         $player.attr('max', max);
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
@@ -186,6 +190,22 @@ $(document).ready(function () {
         if (result !== true) {
             notify(result);
         }
+    });
+});
+$(document).ready(function () {
+    const $funInput = $('#function-input');
+    const $inputMatrixMode = document.getElementById('input-matrix-mode');
+    const $scalarMode = document.getElementById('scalar-mode');
+    $inputMatrixMode.addEventListener('change', () => $funInput.trigger('keyup'));
+    $scalarMode.addEventListener('change', function () {
+        if (this.checked) {
+            $inputMatrixMode.checked = true;
+            $inputMatrixMode.disabled = true;
+        }
+        else {
+            $inputMatrixMode.disabled = false;
+        }
+        $funInput.trigger('keyup');
     });
 });
 export function phantomTextSize(text, font) {

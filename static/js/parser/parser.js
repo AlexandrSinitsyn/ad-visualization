@@ -1,7 +1,7 @@
 import { ErrorNode, Variable, RuleRef, Operation } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
-import { parserMapping } from "../ad/operations.js";
+import { parserMapping, functionsProhibitForScalar } from "../ad/operations.js";
 import grammar from "./grammar.js";
 class ParserResult {
     constructor(functions, graph, err) {
@@ -22,7 +22,7 @@ class ParserResult {
         return this._graph;
     }
 }
-function parseToTree(input, vrb, ops, rule, onError) {
+function parseToTree(input, vrb, ops, rule, onError, scalarMode) {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
     try {
@@ -56,6 +56,8 @@ function parseToTree(input, vrb, ops, rule, onError) {
                         return rules.get(v.name)[1];
                     case Operation:
                         const op = v;
+                        if (scalarMode && functionsProhibitForScalar.has(op.name))
+                            throw new ParserError(`${op.name} not supported in scalar mode`);
                         op.children.forEach((e) => dfs(e));
                         const operands = op.children.map((e) => pieces.get(e.toString()));
                         const operation = ops.get(op.name);
@@ -89,13 +91,13 @@ function parseToTree(input, vrb, ops, rule, onError) {
     return { rules: [...rules.values()].map(([_, tree]) => tree), graph: [...pieces.values()] };
 }
 // fixme
-export const parseFunction = (input) => {
+export const parseFunction = (input, scalarMode) => {
     const errors = [];
     try {
         const { rules, graph } = parseToTree(input, (name) => new FunctionTree.Variable(name), parserMapping, (name, content) => new FunctionTree.Rule(name, content), (content, message, children) => {
             errors.push([content, message]);
             return new FunctionTree.ErrorNode(content, message, children);
-        });
+        }, scalarMode);
         return errors.length > 0
             ? new ParserResult(rules, graph, errors.map(([from, message]) => '> ' + message).join('\n'))
             : new ParserResult(rules, graph);

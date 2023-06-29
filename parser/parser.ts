@@ -1,7 +1,7 @@
 import { Node, ErrorNode, Variable, RuleRef, Operation, Rule } from './parser-tree.js';
 import { FunctionTree } from "../ad/function-tree.js";
 import { ParserError } from "../util/errors.js";
-import { parserMapping, functions } from "../ad/operations.js";
+import { parserMapping, functionsProhibitForScalar } from "../ad/operations.js";
 import grammar from "./grammar.js";
 
 class ParserResult<Tree> {
@@ -39,7 +39,8 @@ function parseToTree<Tree>(
     vrb: (name: string) => Tree,
     ops: Map<string, (args: Tree[]) => Tree>,
     rule: (name: string, arg: Tree) => Tree,
-    onError: (content: string, message: string, args: Tree[]) => Tree
+    onError: (content: string, message: string, args: Tree[]) => Tree,
+    scalarMode: boolean
 ): { rules: Tree[], graph: Tree[] } {
     // @ts-ignore
     const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -80,6 +81,7 @@ function parseToTree<Tree>(
                         return rules.get((v as RuleRef).name)![1];
                     case Operation:
                         const op = v as Operation;
+                        if (scalarMode && functionsProhibitForScalar.has(op.name)) throw new ParserError(`${op.name} not supported in scalar mode`);
                         op.children.forEach((e) => dfs(e));
                         const operands = op.children.map((e) => pieces.get(e.toString())!);
 
@@ -126,7 +128,7 @@ function parseToTree<Tree>(
 }
 
 // fixme
-export const parseFunction = (input: string): ParserResult<FunctionTree.Node> => {
+export const parseFunction = (input: string, scalarMode: boolean): ParserResult<FunctionTree.Node> => {
     const errors: [string, string][] = [];
 
     try {
@@ -138,7 +140,8 @@ export const parseFunction = (input: string): ParserResult<FunctionTree.Node> =>
             (content, message, children) => {
                 errors.push([content, message]);
                 return new FunctionTree.ErrorNode(content, message, children);
-            }
+            },
+            scalarMode
         );
 
         return errors.length > 0

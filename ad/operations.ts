@@ -19,13 +19,14 @@ const SNum = SymbolicDerivatives.Num;
 export const parserMapping: Map<string, (args: FunctionTree.Node[]) => FunctionTree.Node> = new Map();
 export const algoMapping: Map<string, (args: GraphNodes.Element[]) => GraphNodes.Operation> = new Map();
 export const functions: Map<string, FunctionTree.OperationType> = new Map();
+export const functionsProhibitForScalar: Set<string> = new Set();
 
 function factory(symbol: string, type: FunctionTree.OperationType,
                  calc: (...operands: GraphNodes.Element[]) => Matrix,
                  toTex: (...operands: string[]) => string,
                  diff: (df: Matrix, ...operands: GraphNodes.Element[]) => void,
-                 symbolicDiff: (sdf: SymbolicDerivatives.Node, ...operands: SymbolicDerivatives.Node[]) => SymbolicDerivatives.Node[],
-                 priority: FunctionTree.Priority | undefined = undefined): true {
+                 symbolicDiff: (scalarMode: boolean, sdf: SymbolicDerivatives.Node, ...operands: SymbolicDerivatives.Node[]) => SymbolicDerivatives.Node[],
+                 priority: FunctionTree.Priority | undefined = undefined, prohibitedForScalar: boolean = false): true {
     const ParserOp = class ParserOp extends FunctionTree.Operation {
         constructor(operands: FunctionTree.Node[]) {
             super(symbol, type, operands, priority);
@@ -50,10 +51,10 @@ function factory(symbol: string, type: FunctionTree.OperationType,
             diff(this.df, ...this.children);
         }
 
-        symbolicDiff(childrenNames: string[]): void {
+        symbolicDiff(childrenNames: string[], scalarMode: boolean): void {
             this.symbolicDiffs = childrenNames.map((x) => SVar(x));
 
-            const symbs = symbolicDiff(this.symbDf, ...this.symbolicDiffs).map((e) => e.simplify());
+            const symbs = symbolicDiff(scalarMode, this.symbDf, ...this.symbolicDiffs).map((e) => e.simplify());
 
             this.children.forEach((c, i) => c.symbDf = c.symbDf instanceof SymbolicDerivatives.Empty ? symbs[i] : SAdd(c.symbDf, symbs[i]));
             this.symbolicDiffs = this.symbolicDiffs.map((_, i) => symbs[i]);
@@ -63,6 +64,7 @@ function factory(symbol: string, type: FunctionTree.OperationType,
     parserMapping.set(symbol, (args) => new ParserOp(args));
     algoMapping.set(symbol, (args) => new AlgoOp(args));
     functions.set(symbol, type);
+    if (prohibitedForScalar) functionsProhibitForScalar.add(symbol);
 
     return true;
 }
@@ -75,7 +77,7 @@ const Plus = factory(
         a.df = a.df.add(df);
         b.df = b.df.add(df);
     },
-    (sdf, a, b) => [sdf, sdf],
+    (_, sdf, a, b) => [sdf, sdf],
     FunctionTree.Priority.ADD
 );
 
@@ -84,7 +86,7 @@ const Add = factory(
     (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)),
     (...args) => `add\\left(${args.join(', ')}\\right)`,
     (df, ...args) => args.forEach((e) => e.df = e.df.add(df)),
-    (sdf, ...operands) => operands.map((e) => sdf),
+    (_, sdf, ...operands) => operands.map((e) => sdf),
 );
 
 const Tanh = factory(
@@ -92,7 +94,7 @@ const Tanh = factory(
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
     (x) => `\\tanh\\left(${x}\\right)`,
     (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)),
-    (sdf, x) => [SDiv(sdf, SSub(SNum(1), SMul(x, x)))]
+    (_, sdf, x) => [SDiv(sdf, SSub(SNum(1), SMul(x, x)))]
 );
 
 const Mul = factory(
@@ -103,7 +105,7 @@ const Mul = factory(
         a.df = a.df.add(df.mul(b.v.transpose()));
         b.df = b.df.add(a.v.transpose().mul(df));
     },
-    (sdf, a, b) => [SMul(sdf, STns(b)), SMul(STns(a), sdf)],
+    (scalarMode, sdf, a, b) => [SMul(sdf, scalarMode ? b : STns(b)), SMul(scalarMode ? a : STns(a), sdf)],
     FunctionTree.Priority.MUL
 );
 
@@ -116,9 +118,11 @@ const Adamar = factory(
         ms.push(df);
         child.df = child.df.add(ms.reduce((a, b) => a.adamar(b)))
     }),
-    (sdf, ...operands) => [...Array(operands.length).keys()].map((i) => {
+    (_, sdf, ...operands) => [...Array(operands.length).keys()].map((i) => {
         const row = [...operands];
         row[i] = sdf;
         return SAOp('had')(...row);
-    })
+    }),
+    undefined,
+    true
 );
