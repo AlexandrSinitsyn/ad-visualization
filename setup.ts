@@ -198,6 +198,8 @@ $(document).ready(function () {
         }).join(''));
 
         // @ts-ignore
+        while (MathJax === undefined || !(MathJax.typeset instanceof Function)) {}
+        // @ts-ignore
         MathJax.typeset();
 
         $variables.children('.var').remove();

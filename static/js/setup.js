@@ -154,6 +154,8 @@ $(document).ready(function () {
             return '\\[' + rule.name + ' = ' + rule.content.toTex(undefined) + '\\]';
         }).join(''));
         // @ts-ignore
+        while (MathJax === undefined || !(MathJax.typeset instanceof Function)) { }
+        // @ts-ignore
         MathJax.typeset();
         $variables.children('.var').remove();
         $derivatives.children('.var').remove();
