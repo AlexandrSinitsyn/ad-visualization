@@ -116,7 +116,7 @@ export namespace FunctionTree {
         }
 
         toTex(parentPriority: FunctionTree.Priority | undefined): string {
-            return `${this.content.toTex(parentPriority)}`;
+            return this.name;
         }
     }
 

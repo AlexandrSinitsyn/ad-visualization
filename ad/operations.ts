@@ -12,7 +12,6 @@ const SMul = SymbolicDerivatives.Mul;
 const SDiv = SymbolicDerivatives.Div;
 const SPow = SymbolicDerivatives.Pow;
 const STns = SymbolicDerivatives.Tns;
-const STanh = SymbolicDerivatives.Tanh;
 const SAOp = SymbolicDerivatives.AOp;
 const SVar = SymbolicDerivatives.Var;
 const SNum = SymbolicDerivatives.Num;
@@ -95,7 +94,7 @@ const Tanh = factory(
     (x) => x.v.apply((i, j, e) => Math.tanh(e)),
     (x) => `\\tanh\\left(${x}\\right)`,
     (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)),
-    (_, sdf, x) => [SSub(SNum(1), SMul(STanh(x), STanh(x)))]
+    (_, sdf, x) => [SSub(SNum(1), SMul(sdf, sdf))]
 );
 
 const Mul = factory(

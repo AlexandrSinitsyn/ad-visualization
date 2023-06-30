@@ -151,7 +151,7 @@ $(document).ready(function () {
         const $function = $('#function-show');
         $function.text(expr.expr().map((e) => {
             const rule = e;
-            return '\\[' + rule.name + ' = ' + rule.toTex(undefined) + '\\]';
+            return '\\[' + rule.name + ' = ' + rule.content.toTex(undefined) + '\\]';
         }).join(''));
         // @ts-ignore
         MathJax.typeset();

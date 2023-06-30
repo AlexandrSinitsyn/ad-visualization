@@ -73,10 +73,10 @@ export class Algorithm {
     *step() {
         yield AlgoStep.INIT;
         yield* this.init();
-        yield AlgoStep.BACKWARDS;
-        yield* this.backwards();
         yield AlgoStep.CALC;
         yield* this.calc();
+        yield AlgoStep.BACKWARDS;
+        yield* this.backwards();
         if (this.withDerivatives) {
             yield AlgoStep.DIFF;
             yield* this.diff();

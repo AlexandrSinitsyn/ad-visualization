@@ -250,9 +250,7 @@ export namespace SymbolicDerivatives {
         (self, a, b) => b.eq(ONE) ? a : self, [false, true]);
     export const Pow = op<[Node, Node]>('pow', PriorityLevel.POW, (a, b) => `${a} ** ${b}`,
         (self, a, b) => a.eq(ZERO) ? ZERO : a.eq(ONE) ? ONE : b.eq(ZERO) ? ONE : b.eq(ONE) ? a : self, [true, false]);
-    export const Tns = op<[Node]>('tns', PriorityLevel.UNARY, (a) => `${a}^T`,
-        (self, a) => self);
-    export const Tanh = op<[Node]>('tns', PriorityLevel.UNARY, (a) => `tanh(${a})`,
+    export const Tns = op<[Node]>('tns', PriorityLevel.UNARY, (a) => `${a}ᵀ`,
         (self, a) => self);
     export const AOp = (name: string) => (...operands: Node[]) => new NamedOperation(name, operands);
 
