@@ -215,7 +215,7 @@ class ExpressionManager {
                 if (f.from < f.to) {
                     previousArrow = `${f.from} -> ${f.to} [label="${untrim(f.text)}"];\n`;
                 } else {
-                    previousArrow = `${f.to} -> ${f.from} [label="${untrim(f.text)}"; arrowtail=normal];\n`;
+                    previousArrow = `${f.to} -> ${f.from} [label="${untrim(f.text)}"; dir=back; arrowtail=normal];\n`;
                 }
             } else if (!TypeChecking.isRuleDef(f)) {
                 const { index, name, nodeName, v, df, symbolicDf } = f;
