@@ -42,9 +42,7 @@ export const graph: Node[] = [];
 export const rules: string[] = [];
 
 function opOr(name: string, message: string, ...operands: Node[]): Node {
-    return functions.has(name) ? new Operation(name, operands)
-        : rules.includes(name) ? new RuleRef(name, operands)
-            : new ErrorNode(name, message, operands);
+    return functions.has(name) ? new Operation(name, operands) : new ErrorNode(name, message, operands);
 }
 
 function unwrap(args: any[]): any[] {
