@@ -192,8 +192,6 @@ class ExpressionManager {
         node [fontname="Comic Sans MS, Comic Sans, cursive"; fontname="italic"];
         `;
 
-        const clusters: RuleDef[] = [];
-
         let previousArrow = '';
 
         const x_char = phantomTextSize('x', 'Comic Sans MS, Comic Sans, cursive');
@@ -211,12 +209,15 @@ class ExpressionManager {
         }
 
         for (const f of this.apply(frame)) {
-            if (TypeChecking.isRuleDef(f)) {
-                clusters.push(f);
-            } else if (TypeChecking.isArrow(f)) {
+            if (TypeChecking.isArrow(f)) {
                 res += previousArrow;
                 previousArrow = `${f.from} -> ${f.to} [label="${untrim(f.text)}"];\n`;
-            } else {
+                if (f.from < f.to) {
+                    previousArrow = `${f.from} -> ${f.to} [label="${untrim(f.text)}"];\n`;
+                } else {
+                    previousArrow = `${f.to} -> ${f.from} [label="${untrim(f.text)}"; dir=back; arrowtail=normal];\n`;
+                }
+            } else if (!TypeChecking.isRuleDef(f)) {
                 const { index, name, nodeName, v, df, symbolicDf } = f;
 
                 const matrixSize = v?.isZero() ? '' : `\\n[${v!.size()}]`;
@@ -228,13 +229,6 @@ class ExpressionManager {
         }
 
         res += previousArrow.length === 0 ? '' : previousArrow.slice(0, previousArrow.length - 3) + '; color=green; fontcolor=green];\n';
-
-        for (const c of clusters) {
-            res += `subgraph cluster_${c.name} {`;
-            res += c.content.join('\n');
-            res += `\nlabel="${c.name}"`;
-            res += `}\n`;
-        }
 
         res += '}';
 

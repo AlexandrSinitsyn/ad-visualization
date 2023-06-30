@@ -25,9 +25,7 @@ import { functions } from '../ad/operations.js';
 export const graph = [];
 export const rules = [];
 function opOr(name, message, ...operands) {
-    return functions.has(name) ? new Operation(name, operands)
-        : rules.includes(name) ? new RuleRef(name, operands)
-            : new ErrorNode(name, message, operands);
+    return functions.has(name) ? new Operation(name, operands) : new ErrorNode(name, message, operands);
 }
 function unwrap(args) {
     const value = (e) => e === null ? null : e.hasOwnProperty("value") ? e["value"] : e;

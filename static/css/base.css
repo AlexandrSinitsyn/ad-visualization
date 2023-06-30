@@ -137,3 +137,7 @@ footer {
     font-size: 0.7rem;
     color: var(--secondary);
 }
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}

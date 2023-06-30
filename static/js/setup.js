@@ -166,7 +166,7 @@ $(document).ready(function () {
         $player.attr('max', max);
         $('#graph').css('height', 'calc(' + $('main').css('max-height') + ' - ' + $function.height() + 'px - ' + $player.height() + 'px - 2rem)');
     });
-    $funInput.text('f = x + y * tanh(x)\ng = x + f(x) * f(x)');
+    $funInput.text('f = x + y * tanh(x)\ng = x + f * f');
     $funInput.trigger('keyup');
 });
 // fps init
@@ -203,10 +203,7 @@ $(document).ready(function () {
 $(document).ready(function () {
     const $funInput = $('#function-input');
     const $switches = $('#switches');
-    $switches.change(() => {
-        $switches.parent().find('label').text();
-        $funInput.trigger('keyup');
-    });
+    $switches.change(() => $funInput.trigger('keyup'));
     $switches.trigger('change');
 });
 export function phantomTextSize(text, font) {

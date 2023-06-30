@@ -9,6 +9,7 @@ const SMul = SymbolicDerivatives.Mul;
 const SDiv = SymbolicDerivatives.Div;
 const SPow = SymbolicDerivatives.Pow;
 const STns = SymbolicDerivatives.Tns;
+const STanh = SymbolicDerivatives.Tanh;
 const SAOp = SymbolicDerivatives.AOp;
 const SVar = SymbolicDerivatives.Var;
 const SNum = SymbolicDerivatives.Num;
@@ -55,7 +56,7 @@ const Plus = factory('+', FunctionTree.OperationType.INFIX, (a, b) => a.v.add(b.
     b.df = b.df.add(df);
 }, (_, sdf, a, b) => [sdf, sdf], FunctionTree.Priority.ADD);
 const Add = factory('add', FunctionTree.OperationType.FUNCTION, (...args) => args.map((e) => e.v).reduce((t, c) => t.add(c)), (...args) => `add\\left(${args.join(', ')}\\right)`, (df, ...args) => args.forEach((e) => e.df = e.df.add(df)), (_, sdf, ...operands) => operands.map((e) => sdf));
-const Tanh = factory('tanh', FunctionTree.OperationType.FUNCTION, (x) => x.v.apply((i, j, e) => Math.tanh(e)), (x) => `\\tanh\\left(${x}\\right)`, (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)), (_, sdf, x) => [SDiv(sdf, SSub(SNum(1), SMul(x, x)))]);
+const Tanh = factory('tanh', FunctionTree.OperationType.FUNCTION, (x) => x.v.apply((i, j, e) => Math.tanh(e)), (x) => `\\tanh\\left(${x}\\right)`, (df, x) => x.df = x.df.add(df.apply((i, j, e) => 1 - e ** 2)), (_, sdf, x) => [SSub(SNum(1), SMul(STanh(x), STanh(x)))]);
 const Mul = factory('*', FunctionTree.OperationType.INFIX, (a, b) => a.v.mul(b.v), (a, b) => `${a} * ${b}`, (df, a, b) => {
     a.df = a.df.add(df.mul(b.v.transpose()));
     b.df = b.df.add(a.v.transpose().mul(df));
