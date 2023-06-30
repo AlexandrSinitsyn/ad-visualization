@@ -71,6 +71,7 @@ function newMatrix($parent, name, onUpdate, fixed) {
             console.log('>', name, '=', VALUE);
             onUpdate(fixed === true ? Arrays.genZero(VALUE[0][0], VALUE[0][1]) : VALUE);
         });
+        $inputField.trigger('keyup');
         return $newCell;
     };
     const newRow = () => {

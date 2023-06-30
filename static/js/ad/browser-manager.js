@@ -275,8 +275,6 @@ export class BrowserManager {
         (_a = this.player) === null || _a === void 0 ? void 0 : _a.goto(frame);
     }
     setFunction(graph, inputMatrixMode, scalarMode) {
-        this.vars.clear();
-        this.derivatives.clear();
         this.graphDrawer.setFunction(new Algorithm(graph, this.vars, this.derivatives, inputMatrixMode, scalarMode), inputMatrixMode);
         this.player = new Player(500, this.graphDrawer.frameCount, (frame) => {
             const result = this.graphDrawer.moveTo(frame);

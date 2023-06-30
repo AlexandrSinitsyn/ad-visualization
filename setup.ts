@@ -98,6 +98,7 @@ function newMatrix($parent: JQuery<HTMLElement>, name: string, onUpdate: (data: 
             onUpdate(fixed === true ? Arrays.genZero(VALUE[0][0], VALUE[0][1]) : VALUE);
         });
 
+        $inputField.trigger('keyup');
         return $newCell;
     };
 
